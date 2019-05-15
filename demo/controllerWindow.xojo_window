@@ -9,7 +9,7 @@ Begin Window controllerWindow
    FullScreen      =   False
    FullScreenButton=   False
    HasBackColor    =   False
-   Height          =   480
+   Height          =   528
    ImplicitInstance=   False
    LiveResize      =   True
    MacProcID       =   0
@@ -25,16 +25,323 @@ Begin Window controllerWindow
    Resizeable      =   True
    Title           =   "pgReQ demo"
    Visible         =   True
-   Width           =   610
+   Width           =   990
+   Begin TextField hostField
+      AcceptTabs      =   False
+      Alignment       =   2
+      AutoDeactivate  =   True
+      AutomaticallyCheckSpelling=   False
+      BackColor       =   &cFFFFFF00
+      Bold            =   False
+      Border          =   True
+      CueText         =   "host"
+      DataField       =   ""
+      DataSource      =   ""
+      Enabled         =   True
+      Format          =   ""
+      Height          =   30
+      HelpTag         =   "host"
+      Index           =   -2147483648
+      Italic          =   False
+      Left            =   20
+      LimitText       =   0
+      LockBottom      =   False
+      LockedInPosition=   False
+      LockLeft        =   True
+      LockRight       =   False
+      LockTop         =   True
+      Mask            =   ""
+      Password        =   False
+      ReadOnly        =   False
+      Scope           =   0
+      TabIndex        =   0
+      TabPanelIndex   =   0
+      TabStop         =   True
+      Text            =   "127.0.0.1"
+      TextColor       =   &c00000000
+      TextFont        =   "System"
+      TextSize        =   16.0
+      TextUnit        =   0
+      Top             =   20
+      Transparent     =   False
+      Underline       =   False
+      UseFocusRing    =   True
+      Visible         =   True
+      Width           =   120
+   End
+   Begin TextField portField
+      AcceptTabs      =   False
+      Alignment       =   2
+      AutoDeactivate  =   True
+      AutomaticallyCheckSpelling=   False
+      BackColor       =   &cFFFFFF00
+      Bold            =   False
+      Border          =   True
+      CueText         =   "port"
+      DataField       =   ""
+      DataSource      =   ""
+      Enabled         =   True
+      Format          =   ""
+      Height          =   30
+      HelpTag         =   "port"
+      Index           =   -2147483648
+      Italic          =   False
+      Left            =   152
+      LimitText       =   0
+      LockBottom      =   False
+      LockedInPosition=   False
+      LockLeft        =   True
+      LockRight       =   False
+      LockTop         =   True
+      Mask            =   ""
+      Password        =   False
+      ReadOnly        =   False
+      Scope           =   0
+      TabIndex        =   1
+      TabPanelIndex   =   0
+      TabStop         =   True
+      Text            =   "5432"
+      TextColor       =   &c00000000
+      TextFont        =   "System"
+      TextSize        =   16.0
+      TextUnit        =   0
+      Top             =   20
+      Transparent     =   False
+      Underline       =   False
+      UseFocusRing    =   True
+      Visible         =   True
+      Width           =   77
+   End
+   Begin TextField usernameField
+      AcceptTabs      =   False
+      Alignment       =   2
+      AutoDeactivate  =   True
+      AutomaticallyCheckSpelling=   False
+      BackColor       =   &cFFFFFF00
+      Bold            =   False
+      Border          =   True
+      CueText         =   "user name"
+      DataField       =   ""
+      DataSource      =   ""
+      Enabled         =   True
+      Format          =   ""
+      Height          =   30
+      HelpTag         =   "user name"
+      Index           =   -2147483648
+      Italic          =   False
+      Left            =   601
+      LimitText       =   0
+      LockBottom      =   False
+      LockedInPosition=   False
+      LockLeft        =   False
+      LockRight       =   True
+      LockTop         =   True
+      Mask            =   ""
+      Password        =   False
+      ReadOnly        =   False
+      Scope           =   0
+      TabIndex        =   2
+      TabPanelIndex   =   0
+      TabStop         =   True
+      Text            =   "postgres"
+      TextColor       =   &c00000000
+      TextFont        =   "System"
+      TextSize        =   16.0
+      TextUnit        =   0
+      Top             =   20
+      Transparent     =   False
+      Underline       =   False
+      UseFocusRing    =   True
+      Visible         =   True
+      Width           =   126
+   End
+   Begin TextField passwordField
+      AcceptTabs      =   False
+      Alignment       =   2
+      AutoDeactivate  =   True
+      AutomaticallyCheckSpelling=   False
+      BackColor       =   &cFFFFFF00
+      Bold            =   False
+      Border          =   True
+      CueText         =   "password"
+      DataField       =   ""
+      DataSource      =   ""
+      Enabled         =   True
+      Format          =   ""
+      Height          =   30
+      HelpTag         =   "password"
+      Index           =   -2147483648
+      Italic          =   False
+      Left            =   739
+      LimitText       =   0
+      LockBottom      =   False
+      LockedInPosition=   False
+      LockLeft        =   False
+      LockRight       =   True
+      LockTop         =   True
+      Mask            =   ""
+      Password        =   True
+      ReadOnly        =   False
+      Scope           =   0
+      TabIndex        =   3
+      TabPanelIndex   =   0
+      TabStop         =   True
+      Text            =   ""
+      TextColor       =   &c00000000
+      TextFont        =   "System"
+      TextSize        =   16.0
+      TextUnit        =   0
+      Top             =   20
+      Transparent     =   False
+      Underline       =   False
+      UseFocusRing    =   True
+      Visible         =   True
+      Width           =   126
+   End
+   Begin Label MainLabel
+      AutoDeactivate  =   True
+      Bold            =   False
+      DataField       =   ""
+      DataSource      =   ""
+      Enabled         =   True
+      Height          =   30
+      HelpTag         =   ""
+      Index           =   -2147483648
+      InitialParent   =   ""
+      Italic          =   False
+      Left            =   241
+      LockBottom      =   False
+      LockedInPosition=   False
+      LockLeft        =   True
+      LockRight       =   True
+      LockTop         =   True
+      Multiline       =   False
+      Scope           =   0
+      Selectable      =   False
+      TabIndex        =   4
+      TabPanelIndex   =   0
+      TabStop         =   True
+      Text            =   "not connected"
+      TextAlign       =   1
+      TextColor       =   &c00000000
+      TextFont        =   "System"
+      TextSize        =   16.0
+      TextUnit        =   0
+      Top             =   20
+      Transparent     =   True
+      Underline       =   False
+      Visible         =   True
+      Width           =   348
+   End
+   Begin PushButton ConnectBtn
+      AutoDeactivate  =   True
+      Bold            =   False
+      ButtonStyle     =   "0"
+      Cancel          =   False
+      Caption         =   "Connect"
+      Default         =   False
+      Enabled         =   True
+      Height          =   30
+      HelpTag         =   ""
+      Index           =   -2147483648
+      InitialParent   =   ""
+      Italic          =   False
+      Left            =   877
+      LockBottom      =   False
+      LockedInPosition=   False
+      LockLeft        =   False
+      LockRight       =   True
+      LockTop         =   True
+      Scope           =   0
+      TabIndex        =   5
+      TabPanelIndex   =   0
+      TabStop         =   True
+      TextFont        =   "System"
+      TextSize        =   16.0
+      TextUnit        =   0
+      Top             =   20
+      Transparent     =   False
+      Underline       =   False
+      Visible         =   True
+      Width           =   93
+   End
+   Begin Listbox log
+      AutoDeactivate  =   True
+      AutoHideScrollbars=   True
+      Bold            =   False
+      Border          =   True
+      ColumnCount     =   1
+      ColumnsResizable=   False
+      ColumnWidths    =   ""
+      DataField       =   ""
+      DataSource      =   ""
+      DefaultRowHeight=   -1
+      Enabled         =   True
+      EnableDrag      =   False
+      EnableDragReorder=   False
+      GridLinesHorizontal=   0
+      GridLinesVertical=   0
+      HasHeading      =   False
+      HeadingIndex    =   -1
+      Height          =   446
+      HelpTag         =   "log"
+      Hierarchical    =   False
+      Index           =   -2147483648
+      InitialParent   =   ""
+      InitialValue    =   ""
+      Italic          =   False
+      Left            =   601
+      LockBottom      =   True
+      LockedInPosition=   False
+      LockLeft        =   False
+      LockRight       =   True
+      LockTop         =   True
+      RequiresSelection=   False
+      Scope           =   0
+      ScrollbarHorizontal=   False
+      ScrollBarVertical=   True
+      SelectionType   =   0
+      ShowDropIndicator=   False
+      TabIndex        =   6
+      TabPanelIndex   =   0
+      TabStop         =   True
+      TextFont        =   "System"
+      TextSize        =   16.0
+      TextUnit        =   0
+      Top             =   62
+      Transparent     =   False
+      Underline       =   False
+      UseFocusRing    =   True
+      Visible         =   True
+      Width           =   369
+      _ScrollOffset   =   0
+      _ScrollWidth    =   -1
+   End
 End
 #tag EndWindow
 
 #tag WindowCode
 	#tag Event
+		Sub Close()
+		  Quit
+		  
+		End Sub
+	#tag EndEvent
+
+	#tag Event
 		Sub Open()
 		  Title = constTitle
 		End Sub
 	#tag EndEvent
+
+
+	#tag Property, Flags = &h21
+		Private db As PostgreSQLDatabase
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private reqSession As pgReQ_session
+	#tag EndProperty
 
 
 	#tag Constant, Name = constTitle, Type = String, Dynamic = False, Default = \"pgReQ controller", Scope = Public
@@ -43,6 +350,87 @@ End
 
 #tag EndWindowCode
 
+#tag Events passwordField
+	#tag Event
+		Sub Open()
+		  dim pgpass as FolderItem = SpecialFolder.UserHome.Child("pg.pass")
+		  
+		  if pgpass.Exists then
+		    
+		    dim inputStream as TextInputStream
+		    inputStream = TextInputStream.Open(pgpass)
+		    
+		    me.Text = inputStream.ReadLine
+		    inputStream.Close
+		    
+		  end if
+		End Sub
+	#tag EndEvent
+#tag EndEvents
+#tag Events ConnectBtn
+	#tag Event
+		Sub Action()
+		  log.DeleteAllRows
+		  
+		  db = new PostgreSQLDatabase
+		  
+		  db.Host = hostField.Text.Trim
+		  db.Port = portField.Text.Trim.Val
+		  db.UserName = usernameField.Text.Trim
+		  db.Password = passwordField.Text.Trim
+		  
+		  if db.Connect = false then 
+		    MainLabel.Text = "error connecting"
+		    log.AddRow db.ErrorMessage
+		    return
+		  else
+		    log.AddRow "connected to db" 
+		  end if
+		  
+		  
+		  
+		  reqSession = new pgReQ_session(db)
+		  
+		  if reqSession.LastError <> "" then
+		    MainLabel.Text = "error creating req session"
+		    log.AddRow reqSession.LastError
+		    Return
+		    
+		  else
+		    log.AddRow "initialized queue"
+		  end if
+		  
+		  dim pid as Integer = reqSession.PID
+		  
+		  if pid < 0 then
+		    MainLabel.Text = "error getting pid"
+		    log.AddRow "pid error: " + reqSession.LastError
+		    return
+		  else
+		    
+		    log.AddRow "pid: " + str(pid)
+		    
+		  end if
+		  
+		  
+		End Sub
+	#tag EndEvent
+#tag EndEvents
+#tag Events log
+	#tag Event
+		Sub DoubleClick()
+		  
+		  Dim row, column As Integer
+		  row = Me.RowFromXY(System.MouseX - Me.Left - Self.Left, System.MouseY - Me.Top - Self.Top)
+		  column = Me.ColumnFromXY(System.MouseX - Me.Left - Self.Left, System.MouseY - Me.Top - Self.Top)
+		  
+		  if row < 0 then return
+		  
+		  MsgBox me.cell(row,column)
+		  
+		End Sub
+	#tag EndEvent
+#tag EndEvents
 #tag ViewBehavior
 	#tag ViewProperty
 		Name="Name"

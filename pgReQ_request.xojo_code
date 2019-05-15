@@ -1,11 +1,15 @@
 #tag Class
 Protected Class pgReQ_request
 	#tag Method, Flags = &h0
-		Sub Constructor()
+		Sub Constructor(initID as string, optional initTimeout as Integer = -1)
 		  
 		End Sub
 	#tag EndMethod
 
+
+	#tag Property, Flags = &h0
+		creationStamp As date
+	#tag EndProperty
 
 	#tag Property, Flags = &h0
 		ID As String
@@ -16,11 +20,19 @@ Protected Class pgReQ_request
 	#tag EndProperty
 
 	#tag Property, Flags = &h0
+		payload As Dictionary
+	#tag EndProperty
+
+	#tag Property, Flags = &h0
 		responderPID As Integer
 	#tag EndProperty
 
 	#tag Property, Flags = &h0
 		Response As Boolean
+	#tag EndProperty
+
+	#tag Property, Flags = &h0
+		responseStamp As date
 	#tag EndProperty
 
 	#tag Property, Flags = &h0
@@ -73,6 +85,7 @@ Protected Class pgReQ_request
 			Name="ID"
 			Group="Behavior"
 			Type="String"
+			EditorType="MultiLineEditor"
 		#tag EndViewProperty
 		#tag ViewProperty
 			Name="initiatorPID"
@@ -98,6 +111,7 @@ Protected Class pgReQ_request
 			Name="UUID"
 			Group="Behavior"
 			Type="string"
+			EditorType="MultiLineEditor"
 		#tag EndViewProperty
 	#tag EndViewBehavior
 End Class

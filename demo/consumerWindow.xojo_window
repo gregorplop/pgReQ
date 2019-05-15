@@ -9,7 +9,7 @@ Begin Window consumerWindow
    FullScreen      =   False
    FullScreenButton=   False
    HasBackColor    =   False
-   Height          =   480
+   Height          =   456
    ImplicitInstance=   False
    LiveResize      =   True
    MacProcID       =   0
@@ -25,7 +25,7 @@ Begin Window consumerWindow
    Resizeable      =   True
    Title           =   "pgReQ demo"
    Visible         =   True
-   Width           =   610
+   Width           =   696
 End
 #tag EndWindow
 
@@ -35,6 +35,15 @@ End
 		  Title = constTitle
 		End Sub
 	#tag EndEvent
+
+
+	#tag Property, Flags = &h21
+		Private db As PostgreSQLDatabase
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private reqSession As pgReQ_session
+	#tag EndProperty
 
 
 	#tag Constant, Name = constTitle, Type = String, Dynamic = False, Default = \"pgReQ consumer", Scope = Public
