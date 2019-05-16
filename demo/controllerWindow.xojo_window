@@ -389,7 +389,7 @@ End
 		  
 		  
 		  
-		  reqSession = new pgReQ_session(db)
+		  reqSession = new pgReQ_session(db , Array("controller"))
 		  
 		  if reqSession.LastError <> "" then
 		    MainLabel.Text = "error creating req session"

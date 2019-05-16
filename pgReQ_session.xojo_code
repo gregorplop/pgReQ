@@ -1,15 +1,44 @@
 #tag Class
 Protected Class pgReQ_session
 	#tag Method, Flags = &h0
-		Sub Constructor(byref initSession as PostgreSQLDatabase)
+		Sub Constructor(byref initSession as PostgreSQLDatabase, channels2listen() as string, optional requests2process() as pgReQ_request)
 		  if IsNull(initSession) then
 		    mLastError = "No valid postgres session"
 		    return
 		  end if
 		  
 		  pgSession = initSession
-		  mCurrentPID = getPID
+		  mCurrentPID = getPID  // will set mLastError if it fails
+		  if mCurrentPID = -1 then return
 		  
+		  if IsNull(channels2listen) = false then
+		    if channels2listen.Ubound < 0 then
+		      mLastError = "No channels to listen to"
+		      Return
+		    end if
+		    for i as Integer = 0 to channels2listen.Ubound
+		      pgSession.SQLExecute("LISTEN """ + channels2listen(i).Lowercase.ReplaceAll("%pid%" , str(mCurrentPID)) + """")
+		      if pgSession.Error then 
+		        mLastError = "Error setting up listener: " + pgSession.ErrorMessage
+		        return
+		      end if
+		    next i
+		  else
+		    mLastError = "No channels to listen to"
+		    Return
+		  end if
+		  
+		  requestDeclarations = requests2process
+		  
+		  AddHandler pgSession.ReceivedNotification , WeakAddressOf pgSessionReceiveNotification
+		  
+		  queuePollTimer = new Timer
+		  queuePollTimer.Period = PollTimerPeriod
+		  AddHandler queuePollTimer.Action , WeakAddressOf PollTimerAction
+		  queuePollTimer.Mode = timer.ModeMultiple
+		  
+		  
+		  mLastError = ""
 		End Sub
 	#tag EndMethod
 
@@ -62,12 +91,39 @@ Protected Class pgReQ_session
 		End Function
 	#tag EndMethod
 
+	#tag Method, Flags = &h21
+		Private Sub pgSessionReceiveNotification(sender as PostgreSQLDatabase, Name as string, ID as integer, Extra as String)
+		  
+		End Sub
+	#tag EndMethod
+
 	#tag Method, Flags = &h0
 		Function PID() As Integer
 		  Return mCurrentPID
 		  
 		End Function
 	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub PollTimerAction(sender as Timer)
+		  if IsNull(pgSession) = false then 
+		    pgSession.CheckForNotifications
+		    
+		    
+		    // some other stuff
+		    
+		    
+		    
+		  else
+		    RaiseEvent ServiceInterrupted("Connection to postgres server no longer valid")
+		  end if
+		End Sub
+	#tag EndMethod
+
+
+	#tag Hook, Flags = &h0
+		Event ServiceInterrupted(errorMsg as string)
+	#tag EndHook
 
 
 	#tag Property, Flags = &h21
@@ -83,12 +139,28 @@ Protected Class pgReQ_session
 	#tag EndProperty
 
 	#tag Property, Flags = &h21
-		Private Queue(-1) As pgReQ_request
+		Private queuePollTimer As Timer
 	#tag EndProperty
 
 	#tag Property, Flags = &h21
-		Private templates(-1) As pgReQ_request
+		Private RequestDeclarations() As pgReQ_request
 	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private RequestsAwaitingResponse() As pgReQ_request
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private RequestsReceived() As pgReQ_request
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private ResponsesReceived() As pgReQ_request
+	#tag EndProperty
+
+
+	#tag Constant, Name = PollTimerPeriod, Type = Double, Dynamic = False, Default = \"250", Scope = Private
+	#tag EndConstant
 
 
 	#tag ViewBehavior
