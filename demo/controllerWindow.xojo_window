@@ -18,9 +18,9 @@ Begin Window controllerWindow
    MaxWidth        =   32000
    MenuBar         =   0
    MenuBarVisible  =   True
-   MinHeight       =   64
+   MinHeight       =   500
    MinimizeButton  =   True
-   MinWidth        =   64
+   MinWidth        =   800
    Placement       =   1
    Resizeable      =   True
    Title           =   "pgReQ demo"
@@ -57,7 +57,7 @@ Begin Window controllerWindow
       TabIndex        =   0
       TabPanelIndex   =   0
       TabStop         =   True
-      Text            =   "127.0.0.1"
+      Text            =   ""
       TextColor       =   &c00000000
       TextFont        =   "System"
       TextSize        =   16.0
@@ -100,7 +100,7 @@ Begin Window controllerWindow
       TabIndex        =   1
       TabPanelIndex   =   0
       TabStop         =   True
-      Text            =   "5432"
+      Text            =   ""
       TextColor       =   &c00000000
       TextFont        =   "System"
       TextSize        =   16.0
@@ -143,7 +143,7 @@ Begin Window controllerWindow
       TabIndex        =   2
       TabPanelIndex   =   0
       TabStop         =   True
-      Text            =   "postgres"
+      Text            =   ""
       TextColor       =   &c00000000
       TextFont        =   "System"
       TextSize        =   16.0
@@ -209,11 +209,11 @@ Begin Window controllerWindow
       Index           =   -2147483648
       InitialParent   =   ""
       Italic          =   False
-      Left            =   241
+      Left            =   20
       LockBottom      =   False
       LockedInPosition=   False
       LockLeft        =   True
-      LockRight       =   True
+      LockRight       =   False
       LockTop         =   True
       Multiline       =   False
       Scope           =   0
@@ -227,11 +227,11 @@ Begin Window controllerWindow
       TextFont        =   "System"
       TextSize        =   16.0
       TextUnit        =   0
-      Top             =   20
+      Top             =   62
       Transparent     =   True
       Underline       =   False
       Visible         =   True
-      Width           =   348
+      Width           =   569
    End
    Begin PushButton ConnectBtn
       AutoDeactivate  =   True
@@ -293,7 +293,7 @@ Begin Window controllerWindow
       Left            =   601
       LockBottom      =   True
       LockedInPosition=   False
-      LockLeft        =   False
+      LockLeft        =   True
       LockRight       =   True
       LockTop         =   True
       RequiresSelection=   False
@@ -317,6 +317,177 @@ Begin Window controllerWindow
       _ScrollOffset   =   0
       _ScrollWidth    =   -1
    End
+   Begin TextField databasenameField
+      AcceptTabs      =   False
+      Alignment       =   2
+      AutoDeactivate  =   True
+      AutomaticallyCheckSpelling=   False
+      BackColor       =   &cFFFFFF00
+      Bold            =   False
+      Border          =   True
+      CueText         =   "database"
+      DataField       =   ""
+      DataSource      =   ""
+      Enabled         =   True
+      Format          =   ""
+      Height          =   30
+      HelpTag         =   "database"
+      Index           =   -2147483648
+      Italic          =   False
+      Left            =   308
+      LimitText       =   0
+      LockBottom      =   False
+      LockedInPosition=   False
+      LockLeft        =   True
+      LockRight       =   True
+      LockTop         =   True
+      Mask            =   ""
+      Password        =   False
+      ReadOnly        =   False
+      Scope           =   0
+      TabIndex        =   7
+      TabPanelIndex   =   0
+      TabStop         =   True
+      Text            =   ""
+      TextColor       =   &c00000000
+      TextFont        =   "System"
+      TextSize        =   16.0
+      TextUnit        =   0
+      Top             =   20
+      Transparent     =   False
+      Underline       =   False
+      UseFocusRing    =   True
+      Visible         =   True
+      Width           =   187
+   End
+   Begin Listbox ReceivedRequestList
+      AutoDeactivate  =   True
+      AutoHideScrollbars=   True
+      Bold            =   False
+      Border          =   True
+      ColumnCount     =   1
+      ColumnsResizable=   False
+      ColumnWidths    =   ""
+      DataField       =   ""
+      DataSource      =   ""
+      DefaultRowHeight=   -1
+      Enabled         =   True
+      EnableDrag      =   False
+      EnableDragReorder=   False
+      GridLinesHorizontal=   0
+      GridLinesVertical=   0
+      HasHeading      =   False
+      HeadingIndex    =   -1
+      Height          =   330
+      HelpTag         =   ""
+      Hierarchical    =   False
+      Index           =   -2147483648
+      InitialParent   =   ""
+      InitialValue    =   ""
+      Italic          =   False
+      Left            =   20
+      LockBottom      =   True
+      LockedInPosition=   False
+      LockLeft        =   True
+      LockRight       =   False
+      LockTop         =   True
+      RequiresSelection=   False
+      Scope           =   0
+      ScrollbarHorizontal=   False
+      ScrollBarVertical=   True
+      SelectionType   =   0
+      ShowDropIndicator=   False
+      TabIndex        =   8
+      TabPanelIndex   =   0
+      TabStop         =   True
+      TextFont        =   "System"
+      TextSize        =   16.0
+      TextUnit        =   0
+      Top             =   141
+      Transparent     =   False
+      Underline       =   False
+      UseFocusRing    =   True
+      Visible         =   True
+      Width           =   569
+      _ScrollOffset   =   0
+      _ScrollWidth    =   -1
+   End
+   Begin Label RequestsReceivedLabel
+      AutoDeactivate  =   True
+      Bold            =   True
+      DataField       =   ""
+      DataSource      =   ""
+      Enabled         =   True
+      Height          =   25
+      HelpTag         =   ""
+      Index           =   -2147483648
+      InitialParent   =   ""
+      Italic          =   False
+      Left            =   20
+      LockBottom      =   False
+      LockedInPosition=   False
+      LockLeft        =   True
+      LockRight       =   True
+      LockTop         =   True
+      Multiline       =   False
+      Scope           =   0
+      Selectable      =   False
+      TabIndex        =   9
+      TabPanelIndex   =   0
+      TabStop         =   True
+      Text            =   "Requests received for processing"
+      TextAlign       =   0
+      TextColor       =   &c00000000
+      TextFont        =   "System"
+      TextSize        =   16.0
+      TextUnit        =   0
+      Top             =   104
+      Transparent     =   True
+      Underline       =   False
+      Visible         =   True
+      Width           =   569
+   End
+   Begin Thread ThreadedRequestProcessor
+      Index           =   -2147483648
+      LockedInPosition=   False
+      Priority        =   5
+      Scope           =   0
+      StackSize       =   0
+      TabPanelIndex   =   0
+   End
+   Begin CheckBox ProcessRequestsCheck
+      AutoDeactivate  =   True
+      Bold            =   False
+      Caption         =   "Process Incoming Requests"
+      DataField       =   ""
+      DataSource      =   ""
+      Enabled         =   True
+      Height          =   25
+      HelpTag         =   ""
+      Index           =   -2147483648
+      InitialParent   =   ""
+      Italic          =   False
+      Left            =   20
+      LockBottom      =   True
+      LockedInPosition=   False
+      LockLeft        =   True
+      LockRight       =   False
+      LockTop         =   False
+      Scope           =   0
+      State           =   1
+      TabIndex        =   10
+      TabPanelIndex   =   0
+      TabStop         =   True
+      TextFont        =   "System"
+      TextSize        =   16.0
+      TextUnit        =   0
+      Top             =   483
+      Transparent     =   False
+      Underline       =   False
+      Value           =   True
+      Visible         =   True
+      Width           =   306
+   End
 End
 #tag EndWindow
 
@@ -331,12 +502,48 @@ End
 	#tag Event
 		Sub Open()
 		  Title = constTitle
+		  
+		  autofillCredentials
 		End Sub
 	#tag EndEvent
 
 
+	#tag Method, Flags = &h0
+		Sub autofillCredentials()
+		  dim pgpass as FolderItem = SpecialFolder.UserHome.Child("pgservice.txt")
+		  
+		  if pgpass.Exists then
+		    
+		    dim inputStream as TextInputStream
+		    inputStream = TextInputStream.Open(pgpass)
+		    
+		    hostField.Text = inputStream.ReadLine
+		    portField.Text = inputStream.ReadLine
+		    databasenameField.Text = inputStream.ReadLine
+		    usernameField.Text = inputStream.ReadLine
+		    passwordField.Text = inputStream.ReadLine
+		    
+		    inputStream.Close
+		    
+		  end if
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Sub ServiceInterrupted(sender as pgReQ_session, errorMsg as string)
+		  log.AddRow ""
+		  log.AddRow "Service interrupted!"
+		  
+		End Sub
+	#tag EndMethod
+
+
 	#tag Property, Flags = &h21
 		Private db As PostgreSQLDatabase
+	#tag EndProperty
+
+	#tag Property, Flags = &h0
+		ProcessorEnable As Boolean = true
 	#tag EndProperty
 
 	#tag Property, Flags = &h21
@@ -353,17 +560,7 @@ End
 #tag Events passwordField
 	#tag Event
 		Sub Open()
-		  dim pgpass as FolderItem = SpecialFolder.UserHome.Child("pg.pass")
 		  
-		  if pgpass.Exists then
-		    
-		    dim inputStream as TextInputStream
-		    inputStream = TextInputStream.Open(pgpass)
-		    
-		    me.Text = inputStream.ReadLine
-		    inputStream.Close
-		    
-		  end if
 		End Sub
 	#tag EndEvent
 #tag EndEvents
@@ -376,6 +573,7 @@ End
 		  
 		  db.Host = hostField.Text.Trim
 		  db.Port = portField.Text.Trim.Val
+		  db.DatabaseName = databasenameField.Text.Trim
 		  db.UserName = usernameField.Text.Trim
 		  db.Password = passwordField.Text.Trim
 		  
@@ -386,8 +584,6 @@ End
 		  else
 		    log.AddRow "connected to db" 
 		  end if
-		  
-		  
 		  
 		  reqSession = new pgReQ_session(db , Array("controller"))
 		  
@@ -400,18 +596,14 @@ End
 		    log.AddRow "initialized queue"
 		  end if
 		  
-		  dim pid as Integer = reqSession.PID
+		  log.AddRow "pid: " + str(reqSession.PID)
 		  
-		  if pid < 0 then
-		    MainLabel.Text = "error getting pid"
-		    log.AddRow "pid error: " + reqSession.LastError
-		    return
-		  else
-		    
-		    log.AddRow "pid: " + str(pid)
-		    
-		  end if
+		  dim channelsListening() as String = reqSession.getChannelsListening
+		  for i as Integer = 0 to channelsListening.Ubound
+		    log.AddRow "listening to channel: " + channelsListening(i)
+		  next i
 		  
+		  AddHandler reqSession.ServiceInterrupted , WeakAddressOf ServiceInterrupted
 		  
 		End Sub
 	#tag EndEvent
@@ -427,6 +619,14 @@ End
 		  if row < 0 then return
 		  
 		  MsgBox me.cell(row,column)
+		  
+		End Sub
+	#tag EndEvent
+#tag EndEvents
+#tag Events ProcessRequestsCheck
+	#tag Event
+		Sub Action()
+		  ProcessorEnable = me.Value
 		  
 		End Sub
 	#tag EndEvent

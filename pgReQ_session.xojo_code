@@ -8,20 +8,29 @@ Protected Class pgReQ_session
 		  end if
 		  
 		  pgSession = initSession
-		  mCurrentPID = getPID  // will set mLastError if it fails
-		  if mCurrentPID = -1 then return
+		  mCurrentPID = getPID 
+		  if mCurrentPID = -1 then 
+		    mLastError = "Error getting PID"
+		    return
+		  end if
 		  
 		  if IsNull(channels2listen) = false then
+		    dim channel2listen as String
 		    if channels2listen.Ubound < 0 then
 		      mLastError = "No channels to listen to"
 		      Return
 		    end if
 		    for i as Integer = 0 to channels2listen.Ubound
-		      pgSession.SQLExecute("LISTEN """ + channels2listen(i).Lowercase.ReplaceAll("%pid%" , str(mCurrentPID)) + """")
+		      channel2listen = channels2listen(i).Lowercase.ReplaceAll("%pid%" , str(mCurrentPID))
+		      pgSession.SQLExecute("LISTEN " + channel2listen)
+		      
 		      if pgSession.Error then 
 		        mLastError = "Error setting up listener: " + pgSession.ErrorMessage
 		        return
+		      else
+		        ChannelsListening.Append channel2listen
 		      end if
+		      
 		    next i
 		  else
 		    mLastError = "No channels to listen to"
@@ -42,44 +51,39 @@ Protected Class pgReQ_session
 		End Sub
 	#tag EndMethod
 
+	#tag Method, Flags = &h0
+		Function getChannelsListening() As string()
+		  Return ChannelsListening
+		  
+		End Function
+	#tag EndMethod
+
 	#tag Method, Flags = &h21
 		Private Function getPID() As integer
-		  if IsNull(pgSession) then 
-		    mLastError = "Null db session"
-		    return -1
-		  end if
+		  if IsNull(pgSession) then return -1
 		  
 		  dim rs as RecordSet = pgSession.SQLSelect("SELECT pg_backend_pid()")
 		  
-		  if pgSession.Error then
-		    mLastError = "db error: " + pgSession.ErrorMessage
+		  if pgSession.Error then 
 		    return -1
+		  else
+		    Return rs.IdxField(1).IntegerValue
 		  end if
-		  
-		  mLastError = ""
-		  Return rs.IdxField(1).IntegerValue
-		  
 		  
 		End Function
 	#tag EndMethod
 
 	#tag Method, Flags = &h21
 		Private Function getUUID() As string
-		  if IsNull(pgSession) then 
-		    mLastError = "Null db session"
-		    return ""
-		  end if
+		  if IsNull(pgSession) then return ""
 		  
 		  dim rs as RecordSet = pgSession.SQLSelect("SELECT uuid_in(md5(random()::text || clock_timestamp()::text)::cstring)")
 		  
-		  if pgSession.Error then
-		    mLastError = "db error: " + pgSession.ErrorMessage
-		    return ""
+		  if pgSession.Error then 
+		    Return ""
+		  else
+		    Return rs.IdxField(1).StringValue
 		  end if
-		  
-		  mLastError = ""
-		  Return rs.IdxField(1).StringValue
-		  
 		  
 		End Function
 	#tag EndMethod
@@ -94,6 +98,7 @@ Protected Class pgReQ_session
 	#tag Method, Flags = &h21
 		Private Sub pgSessionReceiveNotification(sender as PostgreSQLDatabase, Name as string, ID as integer, Extra as String)
 		  
+		  System.DebugLog(name + EndOfLine + str(id) + EndOfLine + Extra)
 		End Sub
 	#tag EndMethod
 
@@ -106,25 +111,72 @@ Protected Class pgReQ_session
 
 	#tag Method, Flags = &h21
 		Private Sub PollTimerAction(sender as Timer)
+		  static VerifyServiceCounter as integer
+		  VerifyServiceCounter = VerifyServiceCounter + 1
+		  
+		  
 		  if IsNull(pgSession) = false then 
+		    if VerifyServiceCounter > VerifyServiceIntervalMultiplier then
+		      
+		      dim currentPID as Integer = getPID 
+		      if mCurrentPID <> currentPID then // db error/disconnect/reconnect
+		        queuePollTimer.Mode = timer.ModeOff
+		        RaiseEvent ServiceInterrupted("Error verifying current PID")
+		        Return
+		      end if
+		    end if
+		    
 		    pgSession.CheckForNotifications
-		    
-		    
-		    // some other stuff
-		    
-		    
 		    
 		  else
 		    RaiseEvent ServiceInterrupted("Connection to postgres server no longer valid")
 		  end if
+		  
 		End Sub
 	#tag EndMethod
 
+	#tag Method, Flags = &h0
+		Function sendRequest(request2send as pgReQ_request) As pgReQ_request
+		  // returns pair: left is boolean, true for success, false for error. right is pgReQ_request when left = true , string carrying error message when left = false
+		  
+		  if request2send.Error then Return request2send
+		  
+		  if IsNull(pgSession) then 
+		    request2send.Error = true
+		    request2send.ErrorMessage = "No PostgreSQL session!"
+		    Return request2send
+		  end if
+		  
+		  request2send.UUID = getUUID
+		  
+		  if request2send.UUID = "" then
+		    request2send.Error = true
+		    request2send.ErrorMessage = "Could not get UUID"
+		    Return request2send
+		  end if
+		  
+		  request2send.creationStamp = new Date
+		  request2send.initiatorPID = mCurrentPID
+		  request2send.MyOwnRequest = true
+		  
+		  
+		  
+		End Function
+	#tag EndMethod
+
+
+	#tag Hook, Flags = &h0
+		Event RequestExpired(ExpiredRequest as pgReQ_request)
+	#tag EndHook
 
 	#tag Hook, Flags = &h0
 		Event ServiceInterrupted(errorMsg as string)
 	#tag EndHook
 
+
+	#tag Property, Flags = &h21
+		Private ChannelsListening() As String
+	#tag EndProperty
 
 	#tag Property, Flags = &h21
 		Private mCurrentPID As Integer
@@ -159,7 +211,10 @@ Protected Class pgReQ_session
 	#tag EndProperty
 
 
-	#tag Constant, Name = PollTimerPeriod, Type = Double, Dynamic = False, Default = \"250", Scope = Private
+	#tag Constant, Name = PollTimerPeriod, Type = Double, Dynamic = False, Default = \"250", Scope = Public
+	#tag EndConstant
+
+	#tag Constant, Name = VerifyServiceIntervalMultiplier, Type = Double, Dynamic = False, Default = \"500", Scope = Public
 	#tag EndConstant
 
 
