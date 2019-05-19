@@ -427,7 +427,7 @@ Begin Window controllerWindow
       LockBottom      =   False
       LockedInPosition=   False
       LockLeft        =   True
-      LockRight       =   True
+      LockRight       =   False
       LockTop         =   True
       Multiline       =   False
       Scope           =   0
@@ -855,5 +855,11 @@ End
 		InitialValue="True"
 		Type="Boolean"
 		EditorType="Boolean"
+	#tag EndViewProperty
+	#tag ViewProperty
+		Name="ProcessorEnable"
+		Group="Behavior"
+		InitialValue="true"
+		Type="Boolean"
 	#tag EndViewProperty
 #tag EndViewBehavior

@@ -59,7 +59,51 @@ Protected Class pgReQ_request
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
+		Function getParameter(name as string) As Variant
+		  if payload.HasKey(name) = false then 
+		    return nil
+		  else
+		    return payload.value(name).StringValue 
+		  end if
+		  
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Sub setParameter(name as string, value as string)
+		  if IsNull(payload) then return
+		  
+		  payload.Value(name) = value
+		  
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
 		Function toJSON() As string
+		  dim JSONpackage as new JSONItem
+		  JSONpackage.Compact = true
+		  JSONpackage.EscapeSlashes = true
+		  
+		  JSONpackage.Value("creationstamp") = if(IsNull(creationStamp) , "" , creationStamp.SQLDateTime)
+		  JSONpackage.Value("error") = str(Error)
+		  JSONpackage.Value("errormessage") = ErrorMessage
+		  JSONpackage.Value("initiatorpid") = initiatorPID
+		  JSONpackage.Value("myownrequest") = str(MyOwnRequest)
+		  JSONpackage.Value("requestchannel") = RequestChannel
+		  JSONpackage.Value("requireresponse") = str(RequireResponse)
+		  JSONpackage.Value("responderpid") = responderPID
+		  JSONpackage.Value("responsechannel") = ResponseChannel
+		  JSONpackage.Value("responsestamp") = if(IsNull(responseStamp) , "" , responseStamp.SQLDateTime)
+		  JSONpackage.Value("timeoutcountdown") = TimeoutCountdown
+		  JSONpackage.Value("type") = Type
+		  JSONpackage.Value("uuid") = UUID
+		  
+		  for i as Integer = 0 to payload.Count - 1
+		    if JSONpackage.HasName(payload.Key(i).StringValue.Lowercase) then Continue for i
+		    JSONpackage.Value(payload.Key(i).StringValue) = payload.Value(payload.Key(i)).StringValue
+		  next i
+		  
+		  Return JSONpackage.ToString
 		  
 		End Function
 	#tag EndMethod
@@ -85,13 +129,16 @@ Protected Class pgReQ_request
 		#tag Note
 			true = This is a request this client has made
 			false = This is a request this client has received and it is configured to process it
-			
 		#tag EndNote
 		MyOwnRequest As Boolean
 	#tag EndProperty
 
+	#tag Property, Flags = &h21
+		Private payload As Dictionary
+	#tag EndProperty
+
 	#tag Property, Flags = &h0
-		payload As Dictionary
+		RequestChannel As String
 	#tag EndProperty
 
 	#tag Property, Flags = &h0
@@ -99,7 +146,11 @@ Protected Class pgReQ_request
 	#tag EndProperty
 
 	#tag Property, Flags = &h0
-		responderPID As Integer
+		responderPID As Integer = 0
+	#tag EndProperty
+
+	#tag Property, Flags = &h0
+		ResponseChannel As String
 	#tag EndProperty
 
 	#tag Property, Flags = &h0
@@ -185,6 +236,21 @@ Protected Class pgReQ_request
 		#tag EndViewProperty
 		#tag ViewProperty
 			Name="RequireResponse"
+			Group="Behavior"
+			Type="Boolean"
+		#tag EndViewProperty
+		#tag ViewProperty
+			Name="Error"
+			Group="Behavior"
+			Type="Boolean"
+		#tag EndViewProperty
+		#tag ViewProperty
+			Name="ErrorMessage"
+			Group="Behavior"
+			Type="String"
+		#tag EndViewProperty
+		#tag ViewProperty
+			Name="MyOwnRequest"
 			Group="Behavior"
 			Type="Boolean"
 		#tag EndViewProperty

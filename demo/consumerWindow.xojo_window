@@ -452,7 +452,7 @@ Begin Window consumerWindow
       Bold            =   False
       ButtonStyle     =   "0"
       Cancel          =   False
-      Caption         =   "Send New CREATEFILE request"
+      Caption         =   "Send CREATEFILE request"
       Default         =   False
       Enabled         =   True
       Height          =   25
@@ -510,6 +510,14 @@ Begin Window consumerWindow
       Underline       =   False
       Visible         =   True
       Width           =   120
+   End
+   Begin Timer UpdateListTimer
+      Index           =   -2147483648
+      LockedInPosition=   False
+      Mode            =   0
+      Period          =   500
+      Scope           =   0
+      TabPanelIndex   =   0
    End
 End
 #tag EndWindow
@@ -625,6 +633,9 @@ End
 		  
 		  AddHandler reqSession.ServiceInterrupted , WeakAddressOf ServiceInterrupted
 		  
+		  UpdateListTimer.Mode = timer.ModeMultiple
+		  
+		  
 		End Sub
 	#tag EndEvent
 #tag EndEvents
@@ -664,12 +675,21 @@ End
 #tag Events SendNewRequestBtn
 	#tag Event
 		Sub Action()
-		  dim newRequest as new pgReQ_request("CREATEFILE" , 10 , true)
+		  if IsNull(reqSession) then 
+		    log.AddRow "no open session"
+		    return 
+		  end if
 		  
+		  dim newRequest as new pgReQ_request("CREATEFILE" , 10 , true)  // create a CREATEFILE request, give it 10 secs timeout and expect a reply
+		  
+		  // this is just generating a filename in an -essentially- random manner
 		  dim preciseMicroseconds as Int64 = Microseconds
-		  dim filename as String = str(preciseMicroseconds)
+		  dim filename as String = str(preciseMicroseconds) + ".test"
 		  
-		  newRequest.payload.Value("FILENAME") = filename  // add a parameter specialized for this request type
+		  newRequest.setParameter("FILENAME" , filename) // add a parameter specialized for this request type
+		  
+		  newRequest.RequestChannel = "controller" 
+		  newRequest.ResponseChannel = reqSession.getChannelsListening(0)
 		  
 		  newRequest = reqSession.sendRequest(newRequest)
 		  
@@ -684,6 +704,13 @@ End
 	#tag Event
 		Sub Action()
 		  app.consumers.Append new consumerWindow
+		End Sub
+	#tag EndEvent
+#tag EndEvents
+#tag Events UpdateListTimer
+	#tag Event
+		Sub Action()
+		  
 		End Sub
 	#tag EndEvent
 #tag EndEvents

@@ -58,6 +58,17 @@ Protected Class pgReQ_session
 		End Function
 	#tag EndMethod
 
+	#tag Method, Flags = &h0
+		Function getChannelsListening(idx as Integer) As string
+		  try
+		    Return ChannelsListening(idx)
+		  Catch e as OutOfBoundsException
+		    Return ""
+		  end try
+		  
+		End Function
+	#tag EndMethod
+
 	#tag Method, Flags = &h21
 		Private Function getPID() As integer
 		  if IsNull(pgSession) then return -1
@@ -69,6 +80,66 @@ Protected Class pgReQ_session
 		  else
 		    Return rs.IdxField(1).IntegerValue
 		  end if
+		  
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Function getRequestsAwaitingResponse() As pgReQ_request()
+		  dim output(-1) as pgReQ_request
+		  dim lastidx as Integer = RequestsAwaitingResponse.Ubound
+		  
+		  try  // just in case...
+		    
+		    for i as Integer = 0 to lastidx
+		      output.Append RequestsAwaitingResponse(i).Clone
+		    next i
+		    
+		  Catch e as OutOfBoundsException
+		    Return output
+		  end try
+		  
+		  Return output
+		  
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Function getRequestsReceived() As pgReQ_request()
+		  dim output(-1) as pgReQ_request
+		  dim lastidx as Integer = RequestsReceived.Ubound
+		  
+		  try  // just in case...
+		    
+		    for i as Integer = 0 to lastidx
+		      output.Append RequestsReceived(i).Clone
+		    next i
+		    
+		  Catch e as OutOfBoundsException
+		    Return output
+		  end try
+		  
+		  Return output
+		  
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Function getResponsesReceived() As pgReQ_request()
+		  dim output(-1) as pgReQ_request
+		  dim lastidx as Integer = ResponsesReceived.Ubound
+		  
+		  try  // just in case...
+		    
+		    for i as Integer = 0 to lastidx
+		      output.Append ResponsesReceived(i).Clone
+		    next i
+		    
+		  Catch e as OutOfBoundsException
+		    Return output
+		  end try
+		  
+		  Return output
 		  
 		End Function
 	#tag EndMethod
@@ -137,8 +208,6 @@ Protected Class pgReQ_session
 
 	#tag Method, Flags = &h0
 		Function sendRequest(request2send as pgReQ_request) As pgReQ_request
-		  // returns pair: left is boolean, true for success, false for error. right is pgReQ_request when left = true , string carrying error message when left = false
-		  
 		  if request2send.Error then Return request2send
 		  
 		  if IsNull(pgSession) then 
@@ -151,7 +220,7 @@ Protected Class pgReQ_session
 		  
 		  if request2send.UUID = "" then
 		    request2send.Error = true
-		    request2send.ErrorMessage = "Could not get UUID"
+		    request2send.ErrorMessage = "Could not get UUID!"
 		    Return request2send
 		  end if
 		  
@@ -159,6 +228,25 @@ Protected Class pgReQ_session
 		  request2send.initiatorPID = mCurrentPID
 		  request2send.MyOwnRequest = true
 		  
+		  dim JSONpackage as String = request2send.toJSON
+		  if JSONpackage.InStr("'") > 0 then
+		    request2send.Error = true
+		    request2send.ErrorMessage = "JSON payload to the queue should not contain a single quote character!"
+		    Return request2send
+		  end if
+		  
+		  dim NOTIFY as string = "NOTIFY " + request2send.RequestChannel + " , '" + JSONpackage + "'"
+		  pgSession.SQLExecute(NOTIFY)
+		  
+		  if pgSession.Error then
+		    request2send.Error = true
+		    request2send.ErrorMessage = "Error sending request: " + pgSession.ErrorMessage
+		    Return request2send
+		  end if
+		  
+		  if request2send.RequireResponse then RequestsAwaitingResponse.Append request2send.Clone
+		  
+		  Return request2send
 		  
 		  
 		End Function
