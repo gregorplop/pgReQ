@@ -198,41 +198,6 @@ Begin Window consumerWindow
       Visible         =   True
       Width           =   126
    End
-   Begin Label MainLabel
-      AutoDeactivate  =   True
-      Bold            =   False
-      DataField       =   ""
-      DataSource      =   ""
-      Enabled         =   True
-      Height          =   30
-      HelpTag         =   ""
-      Index           =   -2147483648
-      InitialParent   =   ""
-      Italic          =   False
-      Left            =   152
-      LockBottom      =   False
-      LockedInPosition=   False
-      LockLeft        =   True
-      LockRight       =   True
-      LockTop         =   True
-      Multiline       =   False
-      Scope           =   0
-      Selectable      =   False
-      TabIndex        =   4
-      TabPanelIndex   =   0
-      TabStop         =   True
-      Text            =   "not connected"
-      TextAlign       =   1
-      TextColor       =   &c00000000
-      TextFont        =   "System"
-      TextSize        =   16.0
-      TextUnit        =   0
-      Top             =   62
-      Transparent     =   True
-      Underline       =   False
-      Visible         =   True
-      Width           =   437
-   End
    Begin PushButton ConnectBtn
       AutoDeactivate  =   True
       Bold            =   False
@@ -452,7 +417,7 @@ Begin Window consumerWindow
       Bold            =   False
       ButtonStyle     =   "0"
       Cancel          =   False
-      Caption         =   "Send CREATEFILE request"
+      Caption         =   "Send HASH request"
       Default         =   False
       Enabled         =   True
       Height          =   25
@@ -524,9 +489,15 @@ End
 
 #tag WindowCode
 	#tag Event
-		Sub Open()
-		  Title = constTitle
+		Sub Close()
+		  reqSession = nil
+		  if IsNull(db) = false then db.Close
 		  
+		End Sub
+	#tag EndEvent
+
+	#tag Event
+		Sub Open()
 		  autofillCredentials
 		End Sub
 	#tag EndEvent
@@ -554,6 +525,29 @@ End
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
+		Function isUUIDlisted(UUID as string) As integer
+		  dim RequestListUbound as Integer = RequestList.ListCount - 1
+		  
+		  for i as Integer = 0 to RequestListUbound
+		    if i <= RequestList.ListCount - 1 then
+		      if UUID = RequestList.cell(i,0) then Return i
+		    Else
+		      Return isUUIDlisted(UUID)  // unfortunate timing, try it once more
+		    end if
+		  next i
+		  
+		  Return -1
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Sub RequestExpired(sender as pgReQ_session, ExpiredRequest as pgReQ_request)
+		  log.AddRow "Expired request: " + ExpiredRequest.UUID
+		  
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
 		Sub ServiceInterrupted(sender as pgReQ_session, errorMsg as string)
 		  log.AddRow ""
 		  log.AddRow "Service interrupted!"
@@ -564,6 +558,58 @@ End
 	#tag Method, Flags = &h0
 		Sub updateRequestsList()
 		  if IsNull(reqSession) then return
+		  
+		  dim requests(-1) as pgReQ_request
+		  dim responses(-1) as pgReQ_request
+		  
+		  dim idx as integer
+		  dim UUIDsRead(-1) as string
+		  dim row(6) as string
+		  
+		  requests = reqSession.getRequestsAwaitingResponse
+		  responses = reqSession.getResponsesReceived
+		  
+		  for i as Integer = 0 to responses.Ubound  // merge the requests and responses array, no need to handle them separateley
+		    requests.Append responses(i)
+		  next i
+		  
+		  
+		  for i as Integer = 0 to requests.Ubound
+		    UUIDsRead.Append requests(i).UUID
+		    
+		    idx = isUUIDlisted(requests(i).UUID)
+		    
+		    if idx < 0 then
+		      
+		      row(0) = requests(i).UUID
+		      row(1) = requests(i).Type
+		      row(2) = requests(i).creationStamp.SQLDateTime
+		      row(3) = if(isnull(requests(i).getParameter("CLEARTEXT")) , "" , requests(i).getParameter("CLEARTEXT").StringValue)
+		      row(4) = str(requests(i).TimeoutCountdown)
+		      row(5) = if(IsNull(requests(i).responseStamp) , "" , requests(i).responseStamp.SQLDateTime)
+		      row(6) = if(isnull(requests(i).getParameter("RESPONSE")) , "" , requests(i).getParameter("RESPONSE").StringValue)
+		      
+		      RequestList.AddRow row
+		      
+		    else
+		      
+		      RequestList.cell(idx , 4) = str(requests(i).TimeoutCountdown)
+		      RequestList.cell(idx , 5) = if(IsNull(requests(i).responseStamp) , "" , requests(i).responseStamp.SQLDateTime)
+		      RequestList.cell(idx , 6) = if(isnull(requests(i).getParameter("RESPONSE")) , "" , requests(i).getParameter("RESPONSE").StringValue)
+		      
+		    end if
+		    
+		  next i
+		  
+		  // remove elements from the list
+		  dim i as Integer = 0
+		  while i <= RequestList.ListCount - 1
+		    if UUIDsRead.IndexOf(RequestList.cell(i,0)) < 0 then  // row should be removed from the list
+		      RequestList.RemoveRow(i)
+		    else  // row should remain in the list
+		      i = i + 1
+		    end if
+		  wend
 		  
 		  
 		End Sub
@@ -606,7 +652,6 @@ End
 		  db.Password = passwordField.Text.Trim
 		  
 		  if db.Connect = false then 
-		    MainLabel.Text = "error connecting"
 		    log.AddRow db.ErrorMessage
 		    return
 		  else
@@ -616,7 +661,7 @@ End
 		  reqSession = new pgReQ_session(db , Array("client_%pid%"))
 		  
 		  if reqSession.LastError <> "" then
-		    MainLabel.Text = "error creating req session"
+		    log.AddRow "error creating req session"
 		    log.AddRow reqSession.LastError
 		    Return
 		    
@@ -632,6 +677,7 @@ End
 		  next i
 		  
 		  AddHandler reqSession.ServiceInterrupted , WeakAddressOf ServiceInterrupted
+		  AddHandler reqSession.RequestExpired , WeakAddressOf RequestExpired
 		  
 		  UpdateListTimer.Mode = timer.ModeMultiple
 		  
@@ -653,23 +699,44 @@ End
 		  
 		End Sub
 	#tag EndEvent
+	#tag Event
+		Function CellBackgroundPaint(g As Graphics, row As Integer, column As Integer) As Boolean
+		  If row Mod 2 = 0 Then
+		    g.ForeColor= rgb(249, 240, 234)
+		  Else
+		    g.ForeColor= &cFFFFFF
+		  End If
+		  g.FillRect(0, 0, g.Width, g.Height)
+		End Function
+	#tag EndEvent
 #tag EndEvents
 #tag Events RequestList
 	#tag Event
 		Sub Open()
-		  me.ColumnCount = 6
+		  me.ColumnCount = 7
 		  me.Heading(0) = "UUID"
 		  me.Heading(1) = "Type"
 		  me.Heading(2) = "Sent at"
 		  me.Heading(3) = "Parameters"
-		  me.Heading(4) = "Received at"
-		  me.Heading(5) = "Response"
+		  me.Heading(4) = "Timeout in"
+		  me.Heading(5) = "Received at"
+		  me.Heading(6) = "Response"
 		  
 		  me.HasHeading = true
 		  me.HeaderType(-1) = Listbox.HeaderTypes.NotSortable
 		  
 		  
 		End Sub
+	#tag EndEvent
+	#tag Event
+		Function CellBackgroundPaint(g As Graphics, row As Integer, column As Integer) As Boolean
+		  If row Mod 2 = 0 Then
+		    g.ForeColor= rgb(249, 240, 234)
+		  Else
+		    g.ForeColor= &cFFFFFF
+		  End If
+		  g.FillRect(0, 0, g.Width, g.Height)
+		End Function
 	#tag EndEvent
 #tag EndEvents
 #tag Events SendNewRequestBtn
@@ -680,13 +747,13 @@ End
 		    return 
 		  end if
 		  
-		  dim newRequest as new pgReQ_request("CREATEFILE" , 10 , true)  // create a CREATEFILE request, give it 10 secs timeout and expect a reply
+		  dim newRequest as new pgReQ_request("HASH" , 10 , true)  // create a CREATEFILE request, give it 10 secs timeout and expect a reply
 		  
-		  // this is just generating a filename in an -essentially- random manner
+		  // this is just generating some text in an -essentially- random manner
 		  dim preciseMicroseconds as Int64 = Microseconds
-		  dim filename as String = str(preciseMicroseconds) + ".test"
+		  dim clearText as String = str(preciseMicroseconds)
 		  
-		  newRequest.setParameter("FILENAME" , filename) // add a parameter specialized for this request type
+		  newRequest.setParameter("CLEARTEXT" , clearText) // add a parameter specialized for this request type
 		  
 		  newRequest.RequestChannel = "controller" 
 		  newRequest.ResponseChannel = reqSession.getChannelsListening(0)
@@ -703,13 +770,15 @@ End
 #tag Events NewConsumerBtn
 	#tag Event
 		Sub Action()
-		  app.consumers.Append new consumerWindow
+		  app.newConsumer
+		  
 		End Sub
 	#tag EndEvent
 #tag EndEvents
 #tag Events UpdateListTimer
 	#tag Event
 		Sub Action()
+		  updateRequestsList
 		  
 		End Sub
 	#tag EndEvent

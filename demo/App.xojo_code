@@ -4,10 +4,21 @@ Inherits Application
 	#tag Event
 		Sub Open()
 		  controller = new controllerWindow
-		  consumers.Append new consumerWindow
+		  
+		  newConsumer
+		  
 		  
 		End Sub
 	#tag EndEvent
+
+
+	#tag Method, Flags = &h0
+		Sub newConsumer()
+		  app.consumers.Append new consumerWindow
+		  app.consumers(app.consumers.Ubound).Title = consumerWindow.constTitle + " " + str(app.consumers.Ubound)
+		  
+		End Sub
+	#tag EndMethod
 
 
 	#tag Property, Flags = &h0

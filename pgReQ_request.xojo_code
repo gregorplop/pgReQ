@@ -10,8 +10,11 @@ Protected Class pgReQ_request
 		  clone.initiatorPID = initiatorPID
 		  clone.MyOwnRequest = MyOwnRequest
 		  clone.payload = clonePayload
+		  clone.processing = processing
+		  clone.RequestChannel = RequestChannel
 		  clone.responderPID = responderPID
-		  clone.responseStamp = new date(responseStamp)
+		  clone.ResponseChannel = ResponseChannel
+		  clone.responseStamp = if(IsNull(responseStamp) , nil , new date(responseStamp))
 		  clone.UUID = UUID
 		  
 		  return clone
@@ -33,7 +36,99 @@ Protected Class pgReQ_request
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
-		Sub Constructor(initJSON as string)
+		Sub Constructor(content as string)
+		  Error = false
+		  ErrorMessage = ""
+		  
+		  dim JSONpackage as JSONItem
+		  
+		  try
+		    
+		    JSONpackage = new JSONItem(content)
+		    
+		  Catch e as JSONException
+		    Error = true
+		    ErrorMessage = "Content is not JSON formatted"
+		    Return
+		  end try
+		  
+		  dim structureError as Boolean = False
+		  
+		  if JSONpackage.HasName("creationstamp") = False then structureError = true
+		  if JSONpackage.HasName("error") = False then structureError = true
+		  if JSONpackage.HasName("errormessage") = False then structureError = true
+		  if JSONpackage.HasName("initiatorpid") = false then structureError = true
+		  if JSONpackage.HasName("requestchannel") = False then structureError = true
+		  if JSONpackage.HasName("requireresponse") = false then structureError = true
+		  if JSONpackage.HasName("responderpid") = false then structureError = true
+		  if JSONpackage.HasName("responsechannel") = false then structureError = true
+		  if JSONpackage.HasName("responsestamp") = false then structureError = true
+		  if JSONpackage.HasName("timeoutcountdown") = False then structureError = true
+		  if JSONpackage.HasName("type") = False then structureError = true
+		  if JSONpackage.HasName("uuid") = False then structureError = true
+		  
+		  if structureError then 
+		    Error = true
+		    ErrorMessage = "Content is not pgReQ compatible"
+		    return
+		  end if
+		  
+		  if JSONpackage.Value("creationstamp").StringValue = "" then
+		    creationStamp = nil
+		  else
+		    creationStamp = new date
+		    creationStamp.SQLDateTime = JSONpackage.Value("creationstamp").StringValue
+		  end if
+		  JSONpackage.Remove("creationstamp")
+		  
+		  Error = JSONpackage.Value("error").BooleanValue
+		  JSONpackage.Remove("error")
+		  
+		  ErrorMessage = JSONpackage.Value("errormessage").StringValue
+		  JSONpackage.Remove("errormessage")
+		  
+		  initiatorPID = JSONpackage.Value("initiatorpid").IntegerValue
+		  JSONpackage.Remove("initiatorpid")
+		  
+		  RequestChannel = JSONpackage.Value("requestchannel").StringValue
+		  JSONpackage.Remove("requestchannel")
+		  
+		  RequireResponse = JSONpackage.Value("requireresponse").BooleanValue
+		  JSONpackage.Remove("requireresponse")
+		  
+		  responderPID = JSONpackage.Value("responderpid").IntegerValue
+		  JSONpackage.Remove("responderpid")
+		  
+		  ResponseChannel = JSONpackage.Value("responsechannel").StringValue
+		  JSONpackage.Remove("responsechannel")
+		  
+		  if JSONpackage.Value("responsestamp").StringValue = "" then
+		    responseStamp = nil
+		  else
+		    responseStamp = new date
+		    responseStamp.SQLDateTime = JSONpackage.Value("responsestamp").StringValue
+		  end if
+		  JSONpackage.Remove("responsestamp")
+		  
+		  TimeoutCountdown = JSONpackage.value("timeoutcountdown").IntegerValue
+		  JSONpackage.Remove("timeoutcountdown")
+		  
+		  Type = JSONpackage.Value("type").StringValue
+		  JSONpackage.Remove("type")
+		  
+		  UUID = JSONpackage.Value("uuid").StringValue
+		  JSONpackage.Remove("uuid")
+		  
+		  // whatever's left in the package is custom parameters
+		  payload = new Dictionary
+		  for i as Integer = 0 to JSONpackage.Count - 1
+		    payload.Value(JSONpackage.Name(i)) = JSONpackage.Value(JSONpackage.Name(i))
+		  next i
+		  
+		  
+		  
+		  
+		  
 		  
 		End Sub
 	#tag EndMethod
@@ -70,12 +165,37 @@ Protected Class pgReQ_request
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
+		Function isResponse() As Boolean
+		  if isnull(responseStamp) then
+		    return false
+		  else
+		    return true
+		  end if
+		  
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
 		Sub setParameter(name as string, value as string)
 		  if IsNull(payload) then return
 		  
 		  payload.Value(name) = value
 		  
 		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function string2boolean(content as String) As Boolean
+		  select case content.Uppercase.Trim
+		  case "TRUE"
+		    return true
+		  case "FALSE"
+		    return false
+		  else
+		    return false
+		  end select
+		  
+		End Function
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
@@ -88,7 +208,7 @@ Protected Class pgReQ_request
 		  JSONpackage.Value("error") = str(Error)
 		  JSONpackage.Value("errormessage") = ErrorMessage
 		  JSONpackage.Value("initiatorpid") = initiatorPID
-		  JSONpackage.Value("myownrequest") = str(MyOwnRequest)
+		  //JSONpackage.Value("myownrequest") = str(MyOwnRequest)  // for local use only
 		  JSONpackage.Value("requestchannel") = RequestChannel
 		  JSONpackage.Value("requireresponse") = str(RequireResponse)
 		  JSONpackage.Value("responderpid") = responderPID
@@ -135,6 +255,10 @@ Protected Class pgReQ_request
 
 	#tag Property, Flags = &h21
 		Private payload As Dictionary
+	#tag EndProperty
+
+	#tag Property, Flags = &h0
+		processing As Boolean = false
 	#tag EndProperty
 
 	#tag Property, Flags = &h0
@@ -221,6 +345,7 @@ Protected Class pgReQ_request
 		#tag ViewProperty
 			Name="responderPID"
 			Group="Behavior"
+			InitialValue="0"
 			Type="Integer"
 		#tag EndViewProperty
 		#tag ViewProperty
@@ -248,10 +373,29 @@ Protected Class pgReQ_request
 			Name="ErrorMessage"
 			Group="Behavior"
 			Type="String"
+			EditorType="MultiLineEditor"
 		#tag EndViewProperty
 		#tag ViewProperty
 			Name="MyOwnRequest"
 			Group="Behavior"
+			Type="Boolean"
+		#tag EndViewProperty
+		#tag ViewProperty
+			Name="RequestChannel"
+			Group="Behavior"
+			Type="String"
+			EditorType="MultiLineEditor"
+		#tag EndViewProperty
+		#tag ViewProperty
+			Name="ResponseChannel"
+			Group="Behavior"
+			Type="String"
+			EditorType="MultiLineEditor"
+		#tag EndViewProperty
+		#tag ViewProperty
+			Name="processing"
+			Group="Behavior"
+			InitialValue="false"
 			Type="Boolean"
 		#tag EndViewProperty
 	#tag EndViewBehavior

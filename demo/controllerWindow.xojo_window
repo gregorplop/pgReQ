@@ -198,41 +198,6 @@ Begin Window controllerWindow
       Visible         =   True
       Width           =   126
    End
-   Begin Label MainLabel
-      AutoDeactivate  =   True
-      Bold            =   False
-      DataField       =   ""
-      DataSource      =   ""
-      Enabled         =   True
-      Height          =   30
-      HelpTag         =   ""
-      Index           =   -2147483648
-      InitialParent   =   ""
-      Italic          =   False
-      Left            =   20
-      LockBottom      =   False
-      LockedInPosition=   False
-      LockLeft        =   True
-      LockRight       =   False
-      LockTop         =   True
-      Multiline       =   False
-      Scope           =   0
-      Selectable      =   False
-      TabIndex        =   4
-      TabPanelIndex   =   0
-      TabStop         =   True
-      Text            =   "not connected"
-      TextAlign       =   1
-      TextColor       =   &c00000000
-      TextFont        =   "System"
-      TextSize        =   16.0
-      TextUnit        =   0
-      Top             =   62
-      Transparent     =   True
-      Underline       =   False
-      Visible         =   True
-      Width           =   569
-   End
    Begin PushButton ConnectBtn
       AutoDeactivate  =   True
       Bold            =   False
@@ -378,7 +343,7 @@ Begin Window controllerWindow
       GridLinesVertical=   0
       HasHeading      =   False
       HeadingIndex    =   -1
-      Height          =   330
+      Height          =   372
       HelpTag         =   ""
       Hierarchical    =   False
       Index           =   -2147483648
@@ -403,7 +368,7 @@ Begin Window controllerWindow
       TextFont        =   "System"
       TextSize        =   16.0
       TextUnit        =   0
-      Top             =   141
+      Top             =   99
       Transparent     =   False
       Underline       =   False
       UseFocusRing    =   True
@@ -441,7 +406,7 @@ Begin Window controllerWindow
       TextFont        =   "System"
       TextSize        =   16.0
       TextUnit        =   0
-      Top             =   104
+      Top             =   62
       Transparent     =   True
       Underline       =   False
       Visible         =   True
@@ -578,7 +543,7 @@ End
 		  db.Password = passwordField.Text.Trim
 		  
 		  if db.Connect = false then 
-		    MainLabel.Text = "error connecting"
+		    log.AddRow "error connecting"
 		    log.AddRow db.ErrorMessage
 		    return
 		  else
@@ -588,7 +553,7 @@ End
 		  reqSession = new pgReQ_session(db , Array("controller"))
 		  
 		  if reqSession.LastError <> "" then
-		    MainLabel.Text = "error creating req session"
+		    log.AddRow "error creating req session"
 		    log.AddRow reqSession.LastError
 		    Return
 		    
@@ -619,6 +584,35 @@ End
 		  if row < 0 then return
 		  
 		  MsgBox me.cell(row,column)
+		  
+		End Sub
+	#tag EndEvent
+	#tag Event
+		Function CellBackgroundPaint(g As Graphics, row As Integer, column As Integer) As Boolean
+		  If row Mod 2 = 0 Then
+		    g.ForeColor= rgb(234, 244, 249)
+		  Else
+		    g.ForeColor= &cFFFFFF
+		  End If
+		  g.FillRect(0, 0, g.Width, g.Height)
+		End Function
+	#tag EndEvent
+#tag EndEvents
+#tag Events ReceivedRequestList
+	#tag Event
+		Function CellBackgroundPaint(g As Graphics, row As Integer, column As Integer) As Boolean
+		  If row Mod 2 = 0 Then
+		    g.ForeColor= rgb(234, 244, 249)
+		  Else
+		    g.ForeColor= &cFFFFFF
+		  End If
+		  g.FillRect(0, 0, g.Width, g.Height)
+		End Function
+	#tag EndEvent
+#tag EndEvents
+#tag Events ThreadedRequestProcessor
+	#tag Event
+		Sub Run()
 		  
 		End Sub
 	#tag EndEvent

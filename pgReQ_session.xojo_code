@@ -168,8 +168,54 @@ Protected Class pgReQ_session
 
 	#tag Method, Flags = &h21
 		Private Sub pgSessionReceiveNotification(sender as PostgreSQLDatabase, Name as string, ID as integer, Extra as String)
+		  // name = channel coming from - ID = pid of the sender - extra = the json-formatted request
 		  
-		  System.DebugLog(name + EndOfLine + str(id) + EndOfLine + Extra)
+		  dim incomingRequest as new pgReQ_request(extra)
+		  
+		  if incomingRequest.Error then // not a pgReQ request
+		    RaiseEvent NotificationPassthrough(Name , ID , Extra)
+		    return
+		  end if
+		  
+		  // it's pgReQ
+		  
+		  if ID = mCurrentPID then return  // it's a message this session sent out and for some reason it's set up to listen to that channel
+		  
+		  // is it a response to a request I've made?
+		  if incomingRequest.isResponse and incomingRequest.initiatorPID = mCurrentPID then
+		    dim idx as Integer = searchAwaitingRequestsQueue(incomingRequest.UUID)
+		    if idx < 0 then // never made such request, this is weird...
+		      // normally this shouldn't happen
+		    else  // we got a reply we've been waiting for
+		      RequestsAwaitingResponse.Remove(idx)
+		      ResponsesReceived.Append incomingRequest
+		      RaiseEvent ResponseReceived(incomingRequest.UUID)
+		    end if
+		    Return
+		  end if
+		  
+		  
+		  // is it a request I'm configured to process?
+		  for i as Integer = 0 to RequestDeclarations.Ubound
+		    if RequestDeclarations(i).Type.Uppercase = incomingRequest.Type.Uppercase then //yes
+		      incomingRequest.processing = false
+		      incomingRequest.MyOwnRequest = false
+		      RequestsReceived.Append incomingRequest
+		      RaiseEvent RequestReceived(incomingRequest.UUID)
+		      return
+		    end if
+		  next i
+		  
+		  // cannot think of anything else...
+		  // the rest if debugging
+		  
+		  app.controller.log.AddRow ""
+		  app.controller.log.AddRow incomingRequest.UUID
+		  app.controller.log.AddRow incomingRequest.Type
+		  app.controller.log.AddRow incomingRequest.creationStamp.SQLDateTime
+		  app.controller.log.AddRow str(IsNull(incomingRequest.responseStamp))
+		  app.controller.log.AddRow ""
+		  
 		End Sub
 	#tag EndMethod
 
@@ -182,28 +228,92 @@ Protected Class pgReQ_session
 
 	#tag Method, Flags = &h21
 		Private Sub PollTimerAction(sender as Timer)
-		  static VerifyServiceCounter as integer
-		  VerifyServiceCounter = VerifyServiceCounter + 1
-		  
-		  
-		  if IsNull(pgSession) = false then 
-		    if VerifyServiceCounter > VerifyServiceIntervalMultiplier then
-		      
-		      dim currentPID as Integer = getPID 
-		      if mCurrentPID <> currentPID then // db error/disconnect/reconnect
-		        queuePollTimer.Mode = timer.ModeOff
-		        RaiseEvent ServiceInterrupted("Error verifying current PID")
-		        Return
-		      end if
-		    end if
-		    
-		    pgSession.CheckForNotifications
-		    
-		  else
+		  if IsNull(pgSession) then  // there's no connection to the db
+		    sender.Mode = timer.ModeOff
 		    RaiseEvent ServiceInterrupted("Connection to postgres server no longer valid")
+		    return
 		  end if
 		  
+		  
+		  VerifyServiceCounter = VerifyServiceCounter + 1
+		  dim thisSecond as Int64 = date(new date).TotalSeconds
+		  
+		  if lastSecond <> thisSecond then  // code here executes once per second
+		    lastSecond = thisSecond
+		    dim RequestsAwaitingResponseUbound as Integer = RequestsAwaitingResponse.Ubound
+		    dim expiredRequest as pgReQ_request
+		    
+		    for i as Integer = 0 to RequestsAwaitingResponseUbound
+		      if i <= RequestsAwaitingResponse.Ubound then
+		        RequestsAwaitingResponse(i).TimeoutCountdown = RequestsAwaitingResponse(i).TimeoutCountdown - 1
+		        if RequestsAwaitingResponse(i).TimeoutCountdown < 0 then  // this request has expired
+		          expiredRequest = RequestsAwaitingResponse(i).Clone
+		          RequestsAwaitingResponse.Remove(i)
+		          exit for i  // note that only one request expiration is reported per second: just for simplicity's sake
+		        end if
+		      end if
+		    next i
+		    
+		    if IsNull(expiredRequest) = false then RaiseEvent RequestExpired(expiredRequest)
+		    
+		  end if
+		  
+		  
+		  if VerifyServiceCounter > VerifyServiceIntervalMultiplier then  // code here executes once per VerifyServiceIntervalMultiplier
+		    
+		    dim currentPID as Integer = getPID 
+		    
+		    if mCurrentPID <> currentPID then // db error/disconnect/reconnect
+		      sender.Mode = timer.ModeOff
+		      RaiseEvent ServiceInterrupted("Error verifying current PID")
+		      Return
+		    end if
+		    
+		    VerifyServiceCounter = 0
+		    
+		  end if
+		  
+		  // code below executes once per PollTimerPeriod
+		  
+		  pgSession.CheckForNotifications
+		  
+		  
 		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Function popResponse(UUID as string) As pgReQ_request
+		  dim i as Integer = 0
+		  dim output as pgReQ_request = nil
+		  
+		  while i <= ResponsesReceived.Ubound
+		    if ResponsesReceived(i).UUID = UUID then 
+		      output = ResponsesReceived(i).Clone
+		      ResponsesReceived.Remove(i)
+		      Return output
+		    end if
+		    i = i + 1
+		  wend
+		  
+		  return output
+		  
+		  
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function searchAwaitingRequestsQueue(UUID as String) As Integer
+		  dim i as Integer = 0
+		  
+		  while i <= RequestsAwaitingResponse.Ubound
+		    if RequestsAwaitingResponse(i).UUID = UUID then return i
+		    i = i + 1
+		  wend
+		  
+		  return -1
+		  
+		  
+		End Function
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
@@ -229,6 +339,7 @@ Protected Class pgReQ_session
 		  request2send.MyOwnRequest = true
 		  
 		  dim JSONpackage as String = request2send.toJSON
+		  
 		  if JSONpackage.InStr("'") > 0 then
 		    request2send.Error = true
 		    request2send.ErrorMessage = "JSON payload to the queue should not contain a single quote character!"
@@ -254,7 +365,19 @@ Protected Class pgReQ_session
 
 
 	#tag Hook, Flags = &h0
+		Event NotificationPassthrough(Name as string, ID as integer, Extra as String)
+	#tag EndHook
+
+	#tag Hook, Flags = &h0
 		Event RequestExpired(ExpiredRequest as pgReQ_request)
+	#tag EndHook
+
+	#tag Hook, Flags = &h0
+		Event RequestReceived(UUID as String)
+	#tag EndHook
+
+	#tag Hook, Flags = &h0
+		Event ResponseReceived(UUID as String)
 	#tag EndHook
 
 	#tag Hook, Flags = &h0
@@ -264,6 +387,13 @@ Protected Class pgReQ_session
 
 	#tag Property, Flags = &h21
 		Private ChannelsListening() As String
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		#tag Note
+			used by PollTimerAction
+		#tag EndNote
+		Private LastSecond As int64
 	#tag EndProperty
 
 	#tag Property, Flags = &h21
@@ -296,6 +426,13 @@ Protected Class pgReQ_session
 
 	#tag Property, Flags = &h21
 		Private ResponsesReceived() As pgReQ_request
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		#tag Note
+			used by PollTimerAction
+		#tag EndNote
+		Private VerifyServiceCounter As Integer
 	#tag EndProperty
 
 
