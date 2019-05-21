@@ -85,7 +85,33 @@ Protected Class pgReQ_session
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
+		Function getRequestReceived(UUID as string) As pgReQ_request
+		  dim idx as Integer = getRequestReceivedIDX(UUID)
+		  if idx < 0 then Return new pgReQ_request(true , "Request not found in received queue!")
+		  Return RequestsReceived(idx)
+		  
+		  
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function getRequestReceivedIDX(UUID as string) As Integer
+		  dim i as Integer = 0
+		  
+		  while i <= RequestsReceived.Ubound
+		    if RequestsReceived(i).UUID = UUID then Return i
+		    i = i + 1
+		  wend
+		  
+		  return -1
+		  
+		  
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
 		Function getRequestsAwaitingResponse() As pgReQ_request()
+		  // returns clones, not references
 		  dim output(-1) as pgReQ_request
 		  dim lastidx as Integer = RequestsAwaitingResponse.Ubound
 		  
@@ -106,6 +132,7 @@ Protected Class pgReQ_session
 
 	#tag Method, Flags = &h0
 		Function getRequestsReceived() As pgReQ_request()
+		  // returns clones, not references
 		  dim output(-1) as pgReQ_request
 		  dim lastidx as Integer = RequestsReceived.Ubound
 		  
@@ -126,6 +153,7 @@ Protected Class pgReQ_session
 
 	#tag Method, Flags = &h0
 		Function getResponsesReceived() As pgReQ_request()
+		  // returns clones, not references
 		  dim output(-1) as pgReQ_request
 		  dim lastidx as Integer = ResponsesReceived.Ubound
 		  
@@ -184,8 +212,9 @@ Protected Class pgReQ_session
 		  // is it a response to a request I've made?
 		  if incomingRequest.isResponse and incomingRequest.initiatorPID = mCurrentPID then
 		    dim idx as Integer = searchAwaitingRequestsQueue(incomingRequest.UUID)
-		    if idx < 0 then // never made such request, this is weird...
-		      // normally this shouldn't happen
+		    if idx < 0 then // we've made this request but we are no longer waiting for the Response
+		      // probably response expired here but handler processed and sent it before it expired there too
+		      // we'll just ignore it
 		    else  // we got a reply we've been waiting for
 		      RequestsAwaitingResponse.Remove(idx)
 		      ResponsesReceived.Append incomingRequest
@@ -207,14 +236,6 @@ Protected Class pgReQ_session
 		  next i
 		  
 		  // cannot think of anything else...
-		  // the rest if debugging
-		  
-		  app.controller.log.AddRow ""
-		  app.controller.log.AddRow incomingRequest.UUID
-		  app.controller.log.AddRow incomingRequest.Type
-		  app.controller.log.AddRow incomingRequest.creationStamp.SQLDateTime
-		  app.controller.log.AddRow str(IsNull(incomingRequest.responseStamp))
-		  app.controller.log.AddRow ""
 		  
 		End Sub
 	#tag EndMethod
@@ -240,21 +261,40 @@ Protected Class pgReQ_session
 		  
 		  if lastSecond <> thisSecond then  // code here executes once per second
 		    lastSecond = thisSecond
-		    dim RequestsAwaitingResponseUbound as Integer = RequestsAwaitingResponse.Ubound
 		    dim expiredRequest as pgReQ_request
+		    dim i as Integer
 		    
-		    for i as Integer = 0 to RequestsAwaitingResponseUbound
-		      if i <= RequestsAwaitingResponse.Ubound then
-		        RequestsAwaitingResponse(i).TimeoutCountdown = RequestsAwaitingResponse(i).TimeoutCountdown - 1
-		        if RequestsAwaitingResponse(i).TimeoutCountdown < 0 then  // this request has expired
-		          expiredRequest = RequestsAwaitingResponse(i).Clone
-		          RequestsAwaitingResponse.Remove(i)
-		          exit for i  // note that only one request expiration is reported per second: just for simplicity's sake
-		        end if
+		    // we allow one expiration per second --this is an intentional design decision, we might revise
+		    
+		    expiredRequest = nil
+		    i = 0
+		    while i <= RequestsAwaitingResponse.Ubound
+		      RequestsAwaitingResponse(i).TimeoutCountdown = RequestsAwaitingResponse(i).TimeoutCountdown - 1
+		      if RequestsAwaitingResponse(i).TimeoutCountdown < 0 then  // this request has expired
+		        expiredRequest = RequestsAwaitingResponse(i).Clone
+		        RequestsAwaitingResponse.Remove(i)
+		        exit while
 		      end if
-		    next i
+		      i = i + 1
+		    wend
 		    
-		    if IsNull(expiredRequest) = false then RaiseEvent RequestExpired(expiredRequest)
+		    if IsNull(expiredRequest) = false then 
+		      RaiseEvent RequestExpired(expiredRequest)
+		      
+		    else
+		      i = 0
+		      while i <= RequestsReceived.Ubound
+		        RequestsReceived(i).TimeoutCountdown = RequestsReceived(i).TimeoutCountdown - 1
+		        if RequestsReceived(i).TimeoutCountdown < 0 then  // this request has expired
+		          expiredRequest = RequestsReceived(i).Clone
+		          RequestsReceived.Remove(i)
+		          exit while
+		        end if
+		        i = i + 1
+		      wend
+		      if IsNull(expiredRequest) = false then RaiseEvent RequestExpired(expiredRequest)
+		    end if
+		    
 		    
 		  end if
 		  
@@ -295,7 +335,7 @@ Protected Class pgReQ_session
 		    i = i + 1
 		  wend
 		  
-		  return output
+		  return output  // nil that is
 		  
 		  
 		End Function

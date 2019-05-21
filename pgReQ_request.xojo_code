@@ -36,6 +36,14 @@ Protected Class pgReQ_request
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
+		Sub Constructor(initError as Boolean, initErrorMessage as String)
+		  Error = initError
+		  ErrorMessage = initErrorMessage
+		  
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
 		Sub Constructor(content as string)
 		  Error = false
 		  ErrorMessage = ""
@@ -135,6 +143,26 @@ Protected Class pgReQ_request
 
 	#tag Method, Flags = &h0
 		Sub Constructor(initType as string, initTimeout as Integer, optional ExpectResponse as Boolean = true)
+		  payload = new Dictionary
+		  
+		  if initType.Trim = "" then
+		    Error = true
+		    ErrorMessage = "No Type supplied in new request"
+		    return
+		  end if
+		  
+		  Type = initType
+		  TimeoutCountdown = initTimeout
+		  RequireResponse = ExpectResponse
+		  
+		  Error = false
+		  ErrorMessage = ""
+		  
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Sub Constructor2(initType as string, initTimeout as Integer, optional ExpectResponse as Boolean = true)
 		  payload = new Dictionary
 		  
 		  if initType.Trim = "" then

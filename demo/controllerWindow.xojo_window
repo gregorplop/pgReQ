@@ -25,7 +25,7 @@ Begin Window controllerWindow
    Resizeable      =   True
    Title           =   "pgReQ demo"
    Visible         =   True
-   Width           =   990
+   Width           =   1034
    Begin TextField hostField
       AcceptTabs      =   False
       Alignment       =   2
@@ -129,7 +129,7 @@ Begin Window controllerWindow
       HelpTag         =   "user name"
       Index           =   -2147483648
       Italic          =   False
-      Left            =   601
+      Left            =   645
       LimitText       =   0
       LockBottom      =   False
       LockedInPosition=   False
@@ -172,7 +172,7 @@ Begin Window controllerWindow
       HelpTag         =   "password"
       Index           =   -2147483648
       Italic          =   False
-      Left            =   739
+      Left            =   783
       LimitText       =   0
       LockBottom      =   False
       LockedInPosition=   False
@@ -211,7 +211,7 @@ Begin Window controllerWindow
       Index           =   -2147483648
       InitialParent   =   ""
       Italic          =   False
-      Left            =   877
+      Left            =   921
       LockBottom      =   False
       LockedInPosition=   False
       LockLeft        =   False
@@ -255,10 +255,10 @@ Begin Window controllerWindow
       InitialParent   =   ""
       InitialValue    =   ""
       Italic          =   False
-      Left            =   601
+      Left            =   645
       LockBottom      =   True
       LockedInPosition=   False
-      LockLeft        =   True
+      LockLeft        =   False
       LockRight       =   True
       LockTop         =   True
       RequiresSelection=   False
@@ -323,9 +323,9 @@ Begin Window controllerWindow
       Underline       =   False
       UseFocusRing    =   True
       Visible         =   True
-      Width           =   187
+      Width           =   231
    End
-   Begin Listbox ReceivedRequestList
+   Begin Listbox RequestList
       AutoDeactivate  =   True
       AutoHideScrollbars=   True
       Bold            =   False
@@ -354,7 +354,7 @@ Begin Window controllerWindow
       LockBottom      =   True
       LockedInPosition=   False
       LockLeft        =   True
-      LockRight       =   False
+      LockRight       =   True
       LockTop         =   True
       RequiresSelection=   False
       Scope           =   0
@@ -373,7 +373,7 @@ Begin Window controllerWindow
       Underline       =   False
       UseFocusRing    =   True
       Visible         =   True
-      Width           =   569
+      Width           =   613
       _ScrollOffset   =   0
       _ScrollWidth    =   -1
    End
@@ -412,14 +412,6 @@ Begin Window controllerWindow
       Visible         =   True
       Width           =   569
    End
-   Begin Thread ThreadedRequestProcessor
-      Index           =   -2147483648
-      LockedInPosition=   False
-      Priority        =   5
-      Scope           =   0
-      StackSize       =   0
-      TabPanelIndex   =   0
-   End
    Begin CheckBox ProcessRequestsCheck
       AutoDeactivate  =   True
       Bold            =   False
@@ -452,6 +444,14 @@ Begin Window controllerWindow
       Value           =   True
       Visible         =   True
       Width           =   306
+   End
+   Begin Timer UpdateListTimer
+      Index           =   -2147483648
+      LockedInPosition=   False
+      Mode            =   0
+      Period          =   500
+      Scope           =   0
+      TabPanelIndex   =   0
    End
 End
 #tag EndWindow
@@ -495,9 +495,57 @@ End
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
+		Function isUUIDlisted(UUID as string) As integer
+		  dim i as Integer = 0
+		  
+		  while i < RequestList.ListCount
+		    if UUID = RequestList.cell(i,0) then return i
+		    i = i + 1
+		  wend
+		  
+		  Return -1
+		  
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Sub RequestExpired(sender as pgReQ_session, ExpiredRequest as pgReQ_request)
+		  log.AddRow "Expired request: " + ExpiredRequest.UUID
+		  
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Sub RequestReceived(sender as pgReQ_session, UUID as string)
+		  dim newRequest as pgReQ_request = reqSession.getRequestReceived(UUID)
+		  if newRequest.Error then Return
+		  
+		  dim row(7) as string
+		  
+		  row(0) = newRequest.UUID
+		  row(1) = newRequest.Type
+		  row(2) = newRequest.creationStamp.SQLDateTime
+		  row(3) = if(isnull(newRequest.getParameter("CLEARTEXT")) , "" , newRequest.getParameter("CLEARTEXT").StringValue)
+		  row(4) = str(newRequest.TimeoutCountdown)
+		  row(5) = newRequest.ResponseChannel
+		  row(6) = ""  // we haven't responded yet
+		  row(7) = ""  // likewise
+		  
+		  RequestList.AddRow row
+		  
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
 		Sub ServiceInterrupted(sender as pgReQ_session, errorMsg as string)
 		  log.AddRow ""
 		  log.AddRow "Service interrupted!"
+		  
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Sub updateRequestsList()
 		  
 		End Sub
 	#tag EndMethod
@@ -513,6 +561,14 @@ End
 
 	#tag Property, Flags = &h21
 		Private reqSession As pgReQ_session
+	#tag EndProperty
+
+	#tag Property, Flags = &h0
+		#tag Note
+			handled requests are kept by the application for the sole purpose of demonstration. pgReQ does not natively maintain a queue of handled requests; it doesn't need it!
+			
+		#tag EndNote
+		responsesSent(-1) As pgReQ_request
 	#tag EndProperty
 
 
@@ -550,7 +606,8 @@ End
 		    log.AddRow "connected to db" 
 		  end if
 		  
-		  reqSession = new pgReQ_session(db , Array("controller"))
+		  // listen to "controller" channel and accept "HASH" requests
+		  reqSession = new pgReQ_session(db , Array("controller") , Array(new pgReQ_request("HASH" , 10 , true)))
 		  
 		  if reqSession.LastError <> "" then
 		    log.AddRow "error creating req session"
@@ -569,6 +626,10 @@ End
 		  next i
 		  
 		  AddHandler reqSession.ServiceInterrupted , WeakAddressOf ServiceInterrupted
+		  AddHandler reqSession.RequestReceived , WeakAddressOf RequestReceived
+		  AddHandler reqSession.RequestExpired , WeakAddressOf RequestExpired
+		  
+		  UpdateListTimer.Mode = timer.ModeMultiple
 		  
 		End Sub
 	#tag EndEvent
@@ -598,7 +659,7 @@ End
 		End Function
 	#tag EndEvent
 #tag EndEvents
-#tag Events ReceivedRequestList
+#tag Events RequestList
 	#tag Event
 		Function CellBackgroundPaint(g As Graphics, row As Integer, column As Integer) As Boolean
 		  If row Mod 2 = 0 Then
@@ -609,10 +670,21 @@ End
 		  g.FillRect(0, 0, g.Width, g.Height)
 		End Function
 	#tag EndEvent
-#tag EndEvents
-#tag Events ThreadedRequestProcessor
 	#tag Event
-		Sub Run()
+		Sub Open()
+		  me.ColumnCount = 8
+		  me.Heading(0) = "UUID"
+		  me.Heading(1) = "Type"
+		  me.Heading(2) = "Created at"
+		  me.Heading(3) = "Parameters"
+		  me.Heading(4) = "Timeout in"
+		  me.Heading(5) = "Respond to"
+		  me.Heading(6) = "Response"
+		  me.Heading(7) = "Responded at"
+		  
+		  me.HasHeading = true
+		  me.HeaderType(-1) = Listbox.HeaderTypes.NotSortable
+		  
 		  
 		End Sub
 	#tag EndEvent
@@ -621,6 +693,14 @@ End
 	#tag Event
 		Sub Action()
 		  ProcessorEnable = me.Value
+		  
+		End Sub
+	#tag EndEvent
+#tag EndEvents
+#tag Events UpdateListTimer
+	#tag Event
+		Sub Action()
+		  updateRequestsList
 		  
 		End Sub
 	#tag EndEvent

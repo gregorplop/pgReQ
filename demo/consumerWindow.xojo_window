@@ -526,17 +526,15 @@ End
 
 	#tag Method, Flags = &h0
 		Function isUUIDlisted(UUID as string) As integer
-		  dim RequestListUbound as Integer = RequestList.ListCount - 1
+		  dim i as Integer = 0
 		  
-		  for i as Integer = 0 to RequestListUbound
-		    if i <= RequestList.ListCount - 1 then
-		      if UUID = RequestList.cell(i,0) then Return i
-		    Else
-		      Return isUUIDlisted(UUID)  // unfortunate timing, try it once more
-		    end if
-		  next i
+		  while i < RequestList.ListCount
+		    if UUID = RequestList.cell(i,0) then return i
+		    i = i + 1
+		  wend
 		  
 		  Return -1
+		  
 		End Function
 	#tag EndMethod
 
