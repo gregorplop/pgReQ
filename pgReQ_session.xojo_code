@@ -88,7 +88,7 @@ Protected Class pgReQ_session
 		Function getRequestReceived(UUID as string) As pgReQ_request
 		  dim idx as Integer = getRequestReceivedIDX(UUID)
 		  if idx < 0 then Return new pgReQ_request(true , "Request not found in received queue!")
-		  Return RequestsReceived(idx)
+		  Return RequestsReceived(idx).Clone
 		  
 		  
 		End Function
@@ -323,6 +323,8 @@ Protected Class pgReQ_session
 
 	#tag Method, Flags = &h0
 		Function popResponse(UUID as string) As pgReQ_request
+		  // returns a handled request from the ResponsesReceived queue and removes it from there
+		  
 		  dim i as Integer = 0
 		  dim output as pgReQ_request = nil
 		  
@@ -380,12 +382,6 @@ Protected Class pgReQ_session
 		  
 		  dim JSONpackage as String = request2send.toJSON
 		  
-		  if JSONpackage.InStr("'") > 0 then
-		    request2send.Error = true
-		    request2send.ErrorMessage = "JSON payload to the queue should not contain a single quote character!"
-		    Return request2send
-		  end if
-		  
 		  dim NOTIFY as string = "NOTIFY " + request2send.RequestChannel + " , '" + JSONpackage + "'"
 		  pgSession.SQLExecute(NOTIFY)
 		  
@@ -400,6 +396,44 @@ Protected Class pgReQ_session
 		  Return request2send
 		  
 		  
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Function sendResponse(UUID as string, response as Dictionary) As pgReQ_request
+		  // sends a response to a request waiting to be handled in the RequestsReceived queue
+		  // whatever you place in the response Dictionary is appended to the payload dictionary of the request
+		  
+		  if IsNull(pgSession) then return new pgReQ_request(true , "Null database session")
+		  if IsNull(response) then return new pgReQ_request(true , "Invalid response")
+		  if response.Count = 0 then return new pgReQ_request(true, "Blank response")
+		  
+		  dim request2respond as pgReQ_request = getRequestReceived(UUID)
+		  if request2respond.Error then Return new pgReQ_request(true , "UUID not found among the requests waiting to be handled")
+		  
+		  for i as Integer = 0 to response.Count - 1
+		    request2respond.setParameter(response.Key(i).StringValue , response.Value(response.Key(i).StringValue))
+		  next i
+		  
+		  request2respond.responderPID = mCurrentPID
+		  request2respond.responseStamp = new date
+		  
+		  dim json as String = request2respond.toJSON
+		  
+		  dim NOTIFY as string = "NOTIFY " + request2respond.ResponseChannel + " , '" + json + "'"
+		  pgSession.SQLExecute(NOTIFY)
+		  
+		  if pgSession.Error then
+		    request2respond.Error = true
+		    request2respond.ErrorMessage = "Error sending request: " + pgSession.ErrorMessage
+		  else
+		    request2respond.Error = False
+		    request2respond.ErrorMessage = ""
+		    dim idx as Integer = getRequestReceivedIDX(UUID)
+		    if idx >= 0 then RequestsReceived.Remove(idx)
+		  end if
+		  
+		  Return request2respond
 		End Function
 	#tag EndMethod
 

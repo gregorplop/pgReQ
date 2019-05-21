@@ -368,7 +368,7 @@ Begin Window consumerWindow
       TextFont        =   "System"
       TextSize        =   16.0
       TextUnit        =   0
-      Top             =   141
+      Top             =   99
       Transparent     =   False
       Underline       =   False
       UseFocusRing    =   True
@@ -406,7 +406,7 @@ Begin Window consumerWindow
       TextFont        =   "System"
       TextSize        =   16.0
       TextUnit        =   0
-      Top             =   104
+      Top             =   62
       Transparent     =   True
       Underline       =   False
       Visible         =   True
@@ -438,7 +438,7 @@ Begin Window consumerWindow
       TextFont        =   "System"
       TextSize        =   14.0
       TextUnit        =   0
-      Top             =   104
+      Top             =   62
       Transparent     =   False
       Underline       =   False
       Visible         =   True
@@ -470,7 +470,7 @@ Begin Window consumerWindow
       TextFont        =   "System"
       TextSize        =   14.0
       TextUnit        =   0
-      Top             =   62
+      Top             =   478
       Transparent     =   False
       Underline       =   False
       Visible         =   True

@@ -410,40 +410,7 @@ Begin Window controllerWindow
       Transparent     =   True
       Underline       =   False
       Visible         =   True
-      Width           =   569
-   End
-   Begin CheckBox ProcessRequestsCheck
-      AutoDeactivate  =   True
-      Bold            =   False
-      Caption         =   "Process Incoming Requests"
-      DataField       =   ""
-      DataSource      =   ""
-      Enabled         =   True
-      Height          =   25
-      HelpTag         =   ""
-      Index           =   -2147483648
-      InitialParent   =   ""
-      Italic          =   False
-      Left            =   20
-      LockBottom      =   True
-      LockedInPosition=   False
-      LockLeft        =   True
-      LockRight       =   False
-      LockTop         =   False
-      Scope           =   0
-      State           =   1
-      TabIndex        =   10
-      TabPanelIndex   =   0
-      TabStop         =   True
-      TextFont        =   "System"
-      TextSize        =   16.0
-      TextUnit        =   0
-      Top             =   483
-      Transparent     =   False
-      Underline       =   False
-      Value           =   True
-      Visible         =   True
-      Width           =   306
+      Width           =   613
    End
    Begin Timer UpdateListTimer
       Index           =   -2147483648
@@ -453,10 +420,68 @@ Begin Window controllerWindow
       Scope           =   0
       TabPanelIndex   =   0
    End
+   Begin PushButton SendShutdownBtn
+      AutoDeactivate  =   True
+      Bold            =   False
+      ButtonStyle     =   "0"
+      Cancel          =   False
+      Caption         =   "Send SHUTDOWN signal to client who sent the selected request "
+      Default         =   False
+      Enabled         =   True
+      Height          =   25
+      HelpTag         =   ""
+      Index           =   -2147483648
+      InitialParent   =   ""
+      Italic          =   False
+      Left            =   20
+      LockBottom      =   False
+      LockedInPosition=   False
+      LockLeft        =   True
+      LockRight       =   True
+      LockTop         =   True
+      Scope           =   0
+      TabIndex        =   11
+      TabPanelIndex   =   0
+      TabStop         =   True
+      TextFont        =   "System"
+      TextSize        =   16.0
+      TextUnit        =   0
+      Top             =   483
+      Transparent     =   False
+      Underline       =   False
+      Visible         =   True
+      Width           =   613
+   End
+   Begin Thread RequestProcessor
+      Index           =   -2147483648
+      LockedInPosition=   False
+      Priority        =   5
+      Scope           =   0
+      StackSize       =   0
+      TabPanelIndex   =   0
+   End
 End
 #tag EndWindow
 
 #tag WindowCode
+	#tag Event
+		Function CancelClose(appQuitting as Boolean) As Boolean
+		  if RequestProcessor.State = thread.Running then
+		    processorKill = true
+		    
+		    do
+		      app.YieldToNextThread
+		    loop until RequestProcessor.State = Thread.NotRunning
+		    
+		  end if
+		  
+		  return false
+		  
+		  
+		  
+		End Function
+	#tag EndEvent
+
 	#tag Event
 		Sub Close()
 		  Quit
@@ -546,6 +571,37 @@ End
 
 	#tag Method, Flags = &h0
 		Sub updateRequestsList()
+		  if IsNull(reqSession) then return
+		  
+		  dim idx as Integer
+		  dim list(-1) as pgReQ_request = reqSession.getRequestsReceived
+		  dim UUIDsRead(-1) as String
+		  
+		  for i as Integer = 0 to ResponsesSent.Ubound
+		    list.Append ResponsesSent(i)
+		  next i
+		  
+		  
+		  
+		  for i as Integer = 0 to list.Ubound
+		    idx = isUUIDlisted(list(i).UUID)
+		    if idx >= 0 then 
+		      RequestList.cell(idx , 4) = str(list(i).TimeoutCountdown)
+		      RequestList.cell(idx , 6) = if(isnull(list(i).getParameter("RESPONSE")) , "" , list(i).getParameter("RESPONSE").StringValue)
+		      RequestList.cell(idx , 7) = if(IsNull(list(i).responseStamp) , "" , list(i).responseStamp.SQLDateTime)
+		    end if
+		    UUIDsRead.Append list(i).UUID
+		  next i
+		  
+		  // remove elements from the list
+		  dim i as Integer = 0
+		  while i <= RequestList.ListCount - 1
+		    if UUIDsRead.IndexOf(RequestList.cell(i,0)) < 0 then  // row should be removed from the list
+		      RequestList.RemoveRow(i)
+		    else  // row should remain in the list
+		      i = i + 1
+		    end if
+		  wend
 		  
 		End Sub
 	#tag EndMethod
@@ -559,6 +615,10 @@ End
 		ProcessorEnable As Boolean = true
 	#tag EndProperty
 
+	#tag Property, Flags = &h0
+		processorKill As Boolean
+	#tag EndProperty
+
 	#tag Property, Flags = &h21
 		Private reqSession As pgReQ_session
 	#tag EndProperty
@@ -566,9 +626,8 @@ End
 	#tag Property, Flags = &h0
 		#tag Note
 			handled requests are kept by the application for the sole purpose of demonstration. pgReQ does not natively maintain a queue of handled requests; it doesn't need it!
-			
 		#tag EndNote
-		responsesSent(-1) As pgReQ_request
+		ResponsesSent(-1) As pgReQ_request
 	#tag EndProperty
 
 
@@ -630,6 +689,8 @@ End
 		  AddHandler reqSession.RequestExpired , WeakAddressOf RequestExpired
 		  
 		  UpdateListTimer.Mode = timer.ModeMultiple
+		  RequestProcessor.Run
+		  
 		  
 		End Sub
 	#tag EndEvent
@@ -689,18 +750,52 @@ End
 		End Sub
 	#tag EndEvent
 #tag EndEvents
-#tag Events ProcessRequestsCheck
-	#tag Event
-		Sub Action()
-		  ProcessorEnable = me.Value
-		  
-		End Sub
-	#tag EndEvent
-#tag EndEvents
 #tag Events UpdateListTimer
 	#tag Event
 		Sub Action()
 		  updateRequestsList
+		  
+		End Sub
+	#tag EndEvent
+#tag EndEvents
+#tag Events RequestProcessor
+	#tag Event
+		Sub Run()
+		  // notice that the processor thread is not event-based (although it can be)
+		  // it polls the request queue and picks up anything that's waiting to be processed
+		  
+		  dim requests(-1) as pgReQ_request
+		  dim response as pgReQ_request
+		  
+		  do
+		    
+		    requests = reqSession.getRequestsReceived
+		    
+		    if requests.Ubound >= 0 then
+		      dim responseData as new Dictionary
+		      
+		      select case requests(0).Type
+		        
+		      case "HASH"
+		        
+		        dim cleartext as string = requests(0).getParameter("CLEARTEXT").StringValue
+		        responseData.Value("RESPONSE") = EncodeHex(MD5(cleartext) , true)
+		        
+		      else
+		        Continue do
+		      end select
+		      
+		      response = reqSession.sendResponse(requests(0).UUID , responseData)
+		      if response.Error then
+		        app.CurrentThread.Sleep(200)
+		      else
+		        ResponsesSent.Append response
+		      end if
+		    end if
+		    
+		    app.YieldToNextThread
+		  loop until processorKill = true
+		  
 		  
 		End Sub
 	#tag EndEvent

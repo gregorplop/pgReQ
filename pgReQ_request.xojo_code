@@ -162,26 +162,6 @@ Protected Class pgReQ_request
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
-		Sub Constructor2(initType as string, initTimeout as Integer, optional ExpectResponse as Boolean = true)
-		  payload = new Dictionary
-		  
-		  if initType.Trim = "" then
-		    Error = true
-		    ErrorMessage = "No Type supplied in new request"
-		    return
-		  end if
-		  
-		  Type = initType
-		  TimeoutCountdown = initTimeout
-		  RequireResponse = ExpectResponse
-		  
-		  Error = false
-		  ErrorMessage = ""
-		  
-		End Sub
-	#tag EndMethod
-
-	#tag Method, Flags = &h0
 		Function getParameter(name as string) As Variant
 		  if payload.HasKey(name) = false then 
 		    return nil
@@ -204,7 +184,7 @@ Protected Class pgReQ_request
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
-		Sub setParameter(name as string, value as string)
+		Sub setParameter(name as string, value as variant)
 		  if IsNull(payload) then return
 		  
 		  payload.Value(name) = value
