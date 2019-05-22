@@ -343,7 +343,7 @@ Begin Window consumerWindow
       GridLinesVertical=   0
       HasHeading      =   False
       HeadingIndex    =   -1
-      Height          =   367
+      Height          =   409
       HelpTag         =   ""
       Hierarchical    =   False
       Index           =   -2147483648
@@ -444,38 +444,6 @@ Begin Window consumerWindow
       Visible         =   True
       Width           =   246
    End
-   Begin PushButton NewConsumerBtn
-      AutoDeactivate  =   True
-      Bold            =   False
-      ButtonStyle     =   "0"
-      Cancel          =   False
-      Caption         =   "New Consumer"
-      Default         =   False
-      Enabled         =   True
-      Height          =   30
-      HelpTag         =   ""
-      Index           =   -2147483648
-      InitialParent   =   ""
-      Italic          =   False
-      Left            =   20
-      LockBottom      =   False
-      LockedInPosition=   False
-      LockLeft        =   True
-      LockRight       =   False
-      LockTop         =   True
-      Scope           =   0
-      TabIndex        =   11
-      TabPanelIndex   =   0
-      TabStop         =   True
-      TextFont        =   "System"
-      TextSize        =   14.0
-      TextUnit        =   0
-      Top             =   478
-      Transparent     =   False
-      Underline       =   False
-      Visible         =   True
-      Width           =   120
-   End
    Begin Timer UpdateListTimer
       Index           =   -2147483648
       LockedInPosition=   False
@@ -541,6 +509,20 @@ End
 	#tag Method, Flags = &h0
 		Sub RequestExpired(sender as pgReQ_session, ExpiredRequest as pgReQ_request)
 		  log.AddRow "Expired request: " + ExpiredRequest.UUID
+		  
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Sub RequestReceived(sender as pgReQ_session, UUID as string)
+		  dim newRequest as pgReQ_request = reqSession.getRequestReceived(UUID)
+		  if newRequest.Error then Return
+		  
+		  if newRequest.Type = "SHUTDOWN" then
+		    reqSession = nil
+		    db.Close
+		    me.Close
+		  end if
 		  
 		End Sub
 	#tag EndMethod
@@ -656,7 +638,7 @@ End
 		    log.AddRow "connected to db" 
 		  end if
 		  
-		  reqSession = new pgReQ_session(db , Array("client_%pid%"))
+		  reqSession = new pgReQ_session(db , Array("client_%pid%") , Array(new pgReQ_request("SHUTDOWN" , 10 , true)))
 		  
 		  if reqSession.LastError <> "" then
 		    log.AddRow "error creating req session"
@@ -676,6 +658,7 @@ End
 		  
 		  AddHandler reqSession.ServiceInterrupted , WeakAddressOf ServiceInterrupted
 		  AddHandler reqSession.RequestExpired , WeakAddressOf RequestExpired
+		  AddHandler reqSession.RequestReceived , WeakAddressOf RequestReceived
 		  
 		  UpdateListTimer.Mode = timer.ModeMultiple
 		  
@@ -745,7 +728,7 @@ End
 		    return 
 		  end if
 		  
-		  dim newRequest as new pgReQ_request("HASH" , 10 , true)  // create a CREATEFILE request, give it 10 secs timeout and expect a reply
+		  dim newRequest as new pgReQ_request("HASH" , 10 , true)
 		  
 		  // this is just generating some text in an -essentially- random manner
 		  dim preciseMicroseconds as Int64 = Microseconds
@@ -761,14 +744,6 @@ End
 		  if newRequest.Error then
 		    MsgBox "Error sending request: " + newRequest.ErrorMessage
 		  end if
-		  
-		End Sub
-	#tag EndEvent
-#tag EndEvents
-#tag Events NewConsumerBtn
-	#tag Event
-		Sub Action()
-		  app.newConsumer
 		  
 		End Sub
 	#tag EndEvent

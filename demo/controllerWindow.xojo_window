@@ -343,7 +343,7 @@ Begin Window controllerWindow
       GridLinesVertical=   0
       HasHeading      =   False
       HeadingIndex    =   -1
-      Height          =   372
+      Height          =   367
       HelpTag         =   ""
       Hierarchical    =   False
       Index           =   -2147483648
@@ -425,15 +425,15 @@ Begin Window controllerWindow
       Bold            =   False
       ButtonStyle     =   "0"
       Cancel          =   False
-      Caption         =   "Send SHUTDOWN signal to client who sent the selected request "
+      Caption         =   "Send SHUTDOWN to client that sent the selected request "
       Default         =   False
       Enabled         =   True
-      Height          =   25
+      Height          =   30
       HelpTag         =   ""
       Index           =   -2147483648
       InitialParent   =   ""
       Italic          =   False
-      Left            =   20
+      Left            =   182
       LockBottom      =   False
       LockedInPosition=   False
       LockLeft        =   True
@@ -446,11 +446,11 @@ Begin Window controllerWindow
       TextFont        =   "System"
       TextSize        =   16.0
       TextUnit        =   0
-      Top             =   483
+      Top             =   478
       Transparent     =   False
       Underline       =   False
       Visible         =   True
-      Width           =   613
+      Width           =   451
    End
    Begin Thread RequestProcessor
       Index           =   -2147483648
@@ -459,6 +459,38 @@ Begin Window controllerWindow
       Scope           =   0
       StackSize       =   0
       TabPanelIndex   =   0
+   End
+   Begin PushButton NewConsumerBtn
+      AutoDeactivate  =   True
+      Bold            =   False
+      ButtonStyle     =   "0"
+      Cancel          =   False
+      Caption         =   "New Consumer"
+      Default         =   False
+      Enabled         =   True
+      Height          =   30
+      HelpTag         =   ""
+      Index           =   -2147483648
+      InitialParent   =   ""
+      Italic          =   False
+      Left            =   20
+      LockBottom      =   False
+      LockedInPosition=   False
+      LockLeft        =   True
+      LockRight       =   False
+      LockTop         =   True
+      Scope           =   0
+      TabIndex        =   12
+      TabPanelIndex   =   0
+      TabStop         =   True
+      TextFont        =   "System"
+      TextSize        =   14.0
+      TextUnit        =   0
+      Top             =   478
+      Transparent     =   False
+      Underline       =   False
+      Visible         =   True
+      Width           =   120
    End
 End
 #tag EndWindow
@@ -758,6 +790,33 @@ End
 		End Sub
 	#tag EndEvent
 #tag EndEvents
+#tag Events SendShutdownBtn
+	#tag Event
+		Sub Action()
+		  if RequestList.ListIndex < 0 then
+		    MsgBox "No incoming request selected!"
+		    return
+		  end if
+		  
+		  if IsNull(reqSession) then 
+		    log.AddRow "no open session"
+		    return 
+		  end if
+		  
+		  dim newRequest as new pgReQ_request("SHUTDOWN" , 10 , false)  
+		  
+		  
+		  newRequest.RequestChannel = RequestList.cell(RequestList.ListIndex , 5)
+		  
+		  newRequest = reqSession.sendRequest(newRequest)
+		  
+		  if newRequest.Error then
+		    MsgBox "Error sending request: " + newRequest.ErrorMessage
+		  end if
+		  
+		End Sub
+	#tag EndEvent
+#tag EndEvents
 #tag Events RequestProcessor
 	#tag Event
 		Sub Run()
@@ -796,6 +855,14 @@ End
 		    app.YieldToNextThread
 		  loop until processorKill = true
 		  
+		  
+		End Sub
+	#tag EndEvent
+#tag EndEvents
+#tag Events NewConsumerBtn
+	#tag Event
+		Sub Action()
+		  app.newConsumer
 		  
 		End Sub
 	#tag EndEvent
@@ -1029,6 +1096,11 @@ End
 		Name="ProcessorEnable"
 		Group="Behavior"
 		InitialValue="true"
+		Type="Boolean"
+	#tag EndViewProperty
+	#tag ViewProperty
+		Name="processorKill"
+		Group="Behavior"
 		Type="Boolean"
 	#tag EndViewProperty
 #tag EndViewBehavior
