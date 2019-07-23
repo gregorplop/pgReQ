@@ -187,6 +187,18 @@ Protected Class pgReQ_session
 		End Function
 	#tag EndMethod
 
+	#tag Method, Flags = &h21
+		Private Function isUUID(candidate as string) As Boolean
+		  if candidate.len <> 36 then return false
+		  if candidate.CountFields("-") <> 5 then return false
+		  
+		  // this is just a very superficial way to validate a uuid
+		  
+		  return true
+		  
+		End Function
+	#tag EndMethod
+
 	#tag Method, Flags = &h0
 		Function LastError() As string
 		  return mLastError
@@ -368,12 +380,14 @@ Protected Class pgReQ_session
 		    Return request2send
 		  end if
 		  
-		  request2send.UUID = getUUID
 		  
-		  if request2send.UUID = "" then
-		    request2send.Error = true
-		    request2send.ErrorMessage = "Could not get UUID!"
-		    Return request2send
+		  if isUUID(request2send.UUID) = false then
+		    request2send.UUID = getUUID
+		    if request2send.UUID = "" then
+		      request2send.Error = true
+		      request2send.ErrorMessage = "Could not get UUID!"
+		      Return request2send
+		    end if
 		  end if
 		  
 		  request2send.creationStamp = new Date
