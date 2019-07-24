@@ -22,7 +22,7 @@ Protected Class pgReQ_session
 		    end if
 		    for i as Integer = 0 to channels2listen.Ubound
 		      channel2listen = channels2listen(i).Lowercase.ReplaceAll("%pid%" , str(mCurrentPID))
-		      pgSession.SQLExecute("LISTEN " + channel2listen)
+		      pgSession.SQLExecute("LISTEN " + """" + channel2listen + """")
 		      
 		      if pgSession.Error then 
 		        mLastError = "Error setting up listener: " + pgSession.ErrorMessage
@@ -396,7 +396,7 @@ Protected Class pgReQ_session
 		  
 		  dim JSONpackage as String = request2send.toJSON
 		  
-		  dim NOTIFY as string = "NOTIFY " + request2send.RequestChannel + " , '" + JSONpackage + "'"
+		  dim NOTIFY as string = "NOTIFY " + """" + request2send.RequestChannel + """" +" , '" + JSONpackage + "'"
 		  pgSession.SQLExecute(NOTIFY)
 		  
 		  if pgSession.Error then
@@ -434,7 +434,7 @@ Protected Class pgReQ_session
 		  
 		  dim json as String = request2respond.toJSON
 		  
-		  dim NOTIFY as string = "NOTIFY " + request2respond.ResponseChannel + " , '" + json + "'"
+		  dim NOTIFY as string = "NOTIFY " + """" + request2respond.ResponseChannel + """" + " , '" + json + "'"
 		  pgSession.SQLExecute(NOTIFY)
 		  
 		  if pgSession.Error then
